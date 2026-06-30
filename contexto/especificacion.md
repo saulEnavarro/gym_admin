@@ -118,7 +118,7 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 
 ## 7. Riesgos abiertos / decisiones pendientes
 
-- [ ] ¿Los precios incluyen IVA o se calcula aparte? (afecta tickets y reportes)
+- [x] **IVA (resuelto 2026-06-26):** los precios capturados son **base gravable, SIN IVA**. El IVA (16%) se calcula y se suma **aparte** en el ticket, el total cobrado y los reportes. Implica: cada producto/membresía guarda precio sin IVA; el POS desglosa subtotal + IVA + total.
 - [ ] Regla de membresía "Parejas": ¿venta vinculada? ¿qué pasa si solo uno renueva?
 - [ ] Periodo de gracia de acceso para membresías vencidas
 - [ ] ¿Hay datos existentes (clientes/inventario) que migrar?

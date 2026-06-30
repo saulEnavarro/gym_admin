@@ -1,0 +1,72 @@
+# Configuración del proyecto Supabase local (gestionado por Supabase CLI).
+# Docs: https://supabase.com/docs/guides/local-development/cli/config
+project_id = "registro-gym"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# Versión mayor de Postgres del stack local. Mantener alineada con el proyecto
+# de producción en Supabase.
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+# Necesario en Fase 3 ("quién está dentro ahora"). Se deja habilitado desde ya.
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+# Servidor SMTP de pruebas: captura los correos (confirmaciones, recordatorios)
+# sin enviarlos de verdad. UI en http://127.0.0.1:54324
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+# Política de tamaño de archivos (fotos de clientes, logos). Buckets PRIVADOS
+# con URLs firmadas: se crean por migración, nunca públicos.
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+# URL del sitio para callbacks y links en correos.
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+jwt_expiry = 3600
+# Rotación real de refresh tokens con revocación (barandilla #6).
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+# En local no exigimos confirmación por correo para agilizar pruebas.
+enable_confirmations = false
+
+[auth.email.template]
+# (Se personalizarán las plantillas de recordatorio en Fase 2.)
+
+# Protección anti-fuerza bruta del portal del cliente (barandilla #4).
+# Supabase aplica rate-limiting; se reforzará a nivel de app en Fase 2.
+[auth.rate_limit]
+email_sent = 10
+sign_in_sign_ups = 30
+token_refresh = 150

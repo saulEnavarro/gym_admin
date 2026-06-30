@@ -1,0 +1,33 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose para DESARROLLO de la app Next.js.
+#
+# Flujo de arranque:
+#   1. supabase start      → levanta Postgres/Auth/Storage/Studio (Docker propio)
+#   2. docker compose up    → levanta la app web (este archivo)
+#
+# La app alcanza a Supabase vía `host.docker.internal` (ver SUPABASE_INTERNAL_URL
+# en .env.local). El navegador, que corre en el host, usa 127.0.0.1.
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: registro_gym_web
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    environment:
+      - WATCHPACK_POLLING=true
+    volumes:
+      # Monta el código para hot-reload...
+      - .:/app
+      # ...pero preserva node_modules y .next del contenedor (no los del host).
+      - /app/node_modules
+      - /app/.next
+    # Permite que el contenedor resuelva `host.docker.internal` en Linux también
+    # (en Docker Desktop para Windows/Mac ya funciona por defecto).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
