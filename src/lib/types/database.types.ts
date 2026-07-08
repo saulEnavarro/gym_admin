@@ -307,9 +307,109 @@ export type Database = {
         };
         Relationships: [];
       };
+      org_counters: {
+        Row: {
+          org_id: string;
+          name: string;
+          value: number;
+        };
+        Insert: {
+          org_id: string;
+          name: string;
+          value?: number;
+        };
+        Update: {
+          org_id?: string;
+          name?: string;
+          value?: number;
+        };
+        Relationships: [];
+      };
+      clients: {
+        Row: {
+          id: string;
+          org_id: string;
+          branch_id: string | null;
+          member_number: number;
+          first_name: string;
+          last_name: string;
+          birth_date: string | null;
+          sex: "female" | "male" | "other" | "undisclosed" | null;
+          mobile_phone: string | null;
+          phone: string | null;
+          email: string | null;
+          address: string | null;
+          emergency_contact_name: string | null;
+          emergency_contact_phone: string | null;
+          photo_url: string | null;
+          notes: string | null;
+          data_consent_at: string | null;
+          guardian_consent: boolean;
+          guardian_name: string | null;
+          is_active: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          branch_id?: string | null;
+          member_number?: number;
+          first_name: string;
+          last_name: string;
+          birth_date?: string | null;
+          sex?: "female" | "male" | "other" | "undisclosed" | null;
+          mobile_phone?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          address?: string | null;
+          emergency_contact_name?: string | null;
+          emergency_contact_phone?: string | null;
+          photo_url?: string | null;
+          notes?: string | null;
+          data_consent_at?: string | null;
+          guardian_consent?: boolean;
+          guardian_name?: string | null;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          branch_id?: string | null;
+          member_number?: number;
+          first_name?: string;
+          last_name?: string;
+          birth_date?: string | null;
+          sex?: "female" | "male" | "other" | "undisclosed" | null;
+          mobile_phone?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          address?: string | null;
+          emergency_contact_name?: string | null;
+          emergency_contact_phone?: string | null;
+          photo_url?: string | null;
+          notes?: string | null;
+          data_consent_at?: string | null;
+          guardian_consent?: boolean;
+          guardian_name?: string | null;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
+      next_counter: {
+        Args: { p_org: string; p_name: string };
+        Returns: number;
+      };
       current_user_org_ids: { Args: Record<string, never>; Returns: string[] };
       current_user_branch_ids: { Args: Record<string, never>; Returns: string[] };
       is_org_member: { Args: { target_org: string }; Returns: boolean };
@@ -335,3 +435,7 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type OrgMember = Database["public"]["Tables"]["org_members"]["Row"];
 export type OrgBranding = Database["public"]["Tables"]["org_branding"]["Row"];
 export type AuditLog = Database["public"]["Tables"]["audit_logs"]["Row"];
+export type Client = Database["public"]["Tables"]["clients"]["Row"];
+export type ClientInsert = Database["public"]["Tables"]["clients"]["Insert"];
+export type ClientUpdate = Database["public"]["Tables"]["clients"]["Update"];
+export type ClientSex = NonNullable<Client["sex"]>;

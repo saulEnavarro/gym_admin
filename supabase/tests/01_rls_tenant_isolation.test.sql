@@ -8,7 +8,7 @@
 -- ║ `authenticated`, igual que haría Supabase con un usuario real.             ║
 -- ╚══════════════════════════════════════════════════════════════════════════╝
 begin;
-select plan(15);
+select plan(22);
 
 -- IDs del seed.
 -- Org A = Iron Temple (aaaa…), Org B = FitZone (bbbb…)
@@ -78,6 +78,32 @@ select lives_ok(
   'Admin A SÍ puede crear una sucursal en su propia org'
 );
 
+-- Clientes (Fase 1): aislamiento de la tabla clients.
+select is(
+  (select count(*)::int from clients),
+  3,
+  'Admin A ve los 3 clientes de su organización (ninguno de la org B)'
+);
+
+select is_empty(
+  $$ select 1 from clients where email = 'sofia.ramirez@example.test' $$,
+  'Admin A NO puede ver un cliente de la org B'
+);
+
+select throws_ok(
+  $$ insert into clients (org_id, first_name, last_name)
+     values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Cliente', 'Pirata') $$,
+  '42501',
+  NULL,
+  'Admin A NO puede crear un cliente en la org B (cross-tenant bloqueado)'
+);
+
+select lives_ok(
+  $$ insert into clients (org_id, first_name, last_name)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Nuevo', 'Cliente (test)') $$,
+  'Admin A SÍ puede registrar un cliente en su propia org'
+);
+
 -- ── Sesión: Recepción A (no admin) ───────────────────────────────────────────
 set local role postgres;
 set local request.jwt.claims to '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
@@ -102,6 +128,21 @@ select throws_ok(
   'Recepción A (no admin) NO puede crear sucursales'
 );
 
+-- Recepción SÍ puede registrar clientes (operación de mostrador)…
+select lives_ok(
+  $$ insert into clients (org_id, first_name, last_name)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Recep', 'Alta') $$,
+  'Recepción A SÍ puede registrar clientes en su org'
+);
+
+-- …pero NO puede borrarlos: la política de DELETE (admin/manager) filtra la fila,
+-- así que el borrado es un no-op y el cliente permanece.
+delete from clients where first_name = 'Recep';
+select isnt_empty(
+  $$ select 1 from clients where first_name = 'Recep' $$,
+  'Recepción A NO puede borrar clientes (RLS filtra el DELETE)'
+);
+
 -- ── Sesión: Admin B ──────────────────────────────────────────────────────────
 set local role postgres;
 set local request.jwt.claims to '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
@@ -116,6 +157,12 @@ select is(
 select is_empty(
   $$ select 1 from organizations where slug = 'iron-temple' $$,
   'Admin B NO puede ver la organización Iron Temple (org A)'
+);
+
+select is(
+  (select count(*)::int from clients),
+  1,
+  'Admin B ve sólo su único cliente (ninguno de la org A)'
 );
 
 select * from finish();

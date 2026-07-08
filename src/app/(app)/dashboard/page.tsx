@@ -24,13 +24,18 @@ export default async function DashboardPage() {
   const supabase = await createClient();
 
   // RLS garantiza que estos conteos son SÓLO de la organización del usuario.
-  const [{ count: branchCount }, { count: teamCount }] = await Promise.all([
-    supabase.from("branches").select("*", { count: "exact", head: true }),
-    supabase
-      .from("org_members")
-      .select("*", { count: "exact", head: true })
-      .neq("role", "client"),
-  ]);
+  const [{ count: branchCount }, { count: teamCount }, { count: activeClients }] =
+    await Promise.all([
+      supabase.from("branches").select("*", { count: "exact", head: true }),
+      supabase
+        .from("org_members")
+        .select("*", { count: "exact", head: true })
+        .neq("role", "client"),
+      supabase
+        .from("clients")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true),
+    ]);
 
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "de nuevo";
 
@@ -72,8 +77,7 @@ export default async function DashboardPage() {
         <StatCard
           icon={<Users className="h-5 w-5" />}
           label="Clientes activos"
-          value="—"
-          hint="Disponible en Fase 1"
+          value={String(activeClients ?? 0)}
         />
         <StatCard
           icon={<CreditCard className="h-5 w-5" />}

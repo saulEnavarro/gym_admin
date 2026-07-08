@@ -103,3 +103,33 @@ update public.org_branding
    set primary_color = '#16a34a', font_family = 'Poppins',
        contact_email = 'hola@fitzone.test'
  where org_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+
+-- ── Clientes demo (Fase 1) ───────────────────────────────────────────────────
+-- El trigger assign_client_number asigna member_number consecutivo por org.
+-- Iron Temple tendrá #0001..#0003; FitZone su propio #0001 (aislamiento).
+insert into public.clients (
+  org_id, branch_id, first_name, last_name, birth_date, sex,
+  mobile_phone, email, emergency_contact_name, emergency_contact_phone,
+  data_consent_at, is_active
+)
+values
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'a1111111-1111-1111-1111-111111111111',
+   'Juan', 'Pérez López', '1995-04-12', 'male',
+   '55-3000-0001', 'juan.perez@example.test',
+   'María López', '55-3000-0002', now(), true),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'a1111111-1111-1111-1111-111111111111',
+   'Ana', 'García Ruiz', '2000-09-30', 'female',
+   '55-3000-0003', 'ana.garcia@example.test',
+   'Luis García', '55-3000-0004', now(), true),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'a2222222-2222-2222-2222-222222222222',
+   'Carlos', 'Méndez Soto', '1988-01-05', 'male',
+   '55-3000-0005', 'carlos.mendez@example.test',
+   'Rosa Soto', '55-3000-0006', now(), false),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+   'b1111111-1111-1111-1111-111111111111',
+   'Sofía', 'Ramírez Díaz', '1999-07-21', 'female',
+   '55-4000-0001', 'sofia.ramirez@example.test',
+   'Elena Díaz', '55-4000-0002', now(), true);

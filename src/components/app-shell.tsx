@@ -28,6 +28,7 @@ type NavItem = {
 // en fases siguientes (marcados con la etiqueta "Pronto").
 const NAV: NavItem[] = [
   { label: "Panel", href: "/dashboard", icon: LayoutDashboard, available: true },
+  { label: "Clientes", href: "/clients", icon: Users, available: true },
   { label: "Sucursales", href: "/branches", icon: Building2, available: false },
   { label: "Equipo", href: "/team", icon: Users, available: false },
   { label: "Personalización", href: "/branding", icon: Palette, available: false },
@@ -57,7 +58,8 @@ export function AppShell({ children, org, user }: AppShellProps) {
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {NAV.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href;
+          const active =
+            pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           if (!item.available) {
             return (
