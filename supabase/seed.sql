@@ -133,3 +133,22 @@ values
    'Sofía', 'Ramírez Díaz', '1999-07-21', 'female',
    '55-4000-0001', 'sofia.ramirez@example.test',
    'Elena Díaz', '55-4000-0002', now(), true);
+
+-- ── Catálogo de membresías (Fase 1) ──────────────────────────────────────────
+-- Precios BASE SIN IVA (§7). Iron Temple usa las 6 del prompt original.
+insert into public.membership_plans
+  (org_id, name, description, price, duration_days, max_members, sort_order)
+values
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Mensual',     'Acceso por 30 días',        450, 30, 1, 1),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Parejas',     'Precio por persona, 2 pers.', 400, 30, 2, 2),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Estudiantes', 'Tarifa para estudiantes',   300, 30, 1, 3),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Quincenal',   'Acceso por 15 días',        250, 15, 1, 4),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Semanal',     'Acceso por 7 días',         150,  7, 1, 5),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Visita',      'Una sola visita',            50,  1, 1, 6);
+
+-- FitZone: catálogo distinto (evidencia el aislamiento entre inquilinos).
+insert into public.membership_plans
+  (org_id, name, description, price, duration_days, max_members, sort_order)
+values
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Mensual Premium', 'Acceso total 30 días', 600, 30, 1, 1),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Día',             'Pase de un día',        80,  1, 1, 2);

@@ -403,6 +403,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      membership_plans: {
+        Row: {
+          id: string;
+          org_id: string;
+          name: string;
+          description: string | null;
+          price: number;
+          duration_days: number;
+          max_members: number;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          name: string;
+          description?: string | null;
+          price: number;
+          duration_days?: number;
+          max_members?: number;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          name?: string;
+          description?: string | null;
+          price?: number;
+          duration_days?: number;
+          max_members?: number;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -439,3 +481,9 @@ export type Client = Database["public"]["Tables"]["clients"]["Row"];
 export type ClientInsert = Database["public"]["Tables"]["clients"]["Insert"];
 export type ClientUpdate = Database["public"]["Tables"]["clients"]["Update"];
 export type ClientSex = NonNullable<Client["sex"]>;
+export type MembershipPlan =
+  Database["public"]["Tables"]["membership_plans"]["Row"];
+export type MembershipPlanInsert =
+  Database["public"]["Tables"]["membership_plans"]["Insert"];
+export type MembershipPlanUpdate =
+  Database["public"]["Tables"]["membership_plans"]["Update"];

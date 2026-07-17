@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Building2,
   Users,
+  Tags,
   Palette,
   ScrollText,
   Settings,
@@ -29,6 +30,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { label: "Panel", href: "/dashboard", icon: LayoutDashboard, available: true },
   { label: "Clientes", href: "/clients", icon: Users, available: true },
+  { label: "Membresías", href: "/memberships", icon: Tags, available: true },
   { label: "Sucursales", href: "/branches", icon: Building2, available: false },
   { label: "Equipo", href: "/team", icon: Users, available: false },
   { label: "Personalización", href: "/branding", icon: Palette, available: false },
