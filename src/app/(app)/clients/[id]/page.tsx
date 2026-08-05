@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   CreditCard,
+  Plus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
@@ -19,7 +20,6 @@ import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -32,7 +32,19 @@ import {
   initials,
   sexLabel,
 } from "@/lib/clients/helpers";
-import type { Client } from "@/lib/types/database.types";
+import { formatCurrency, cn } from "@/lib/utils";
+import {
+  membershipStatus,
+  daysRemaining,
+  formatFolio,
+  paymentLabel,
+  MEMBERSHIP_STATUS_LABELS,
+} from "@/lib/pos/helpers";
+import type {
+  Client,
+  ClientMembership,
+  Sale,
+} from "@/lib/types/database.types";
 
 export const metadata: Metadata = { title: "Ficha de cliente" };
 
@@ -41,9 +53,11 @@ export default async function ClientDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireSession();
+  const { branding } = await requireSession();
   const { id } = await params;
   const supabase = await createClient();
+  const currency = branding?.currency ?? "MXN";
+  const locale = branding?.locale ?? "es-MX";
 
   const { data: client } = await supabase
     .from("clients")
@@ -53,6 +67,31 @@ export default async function ClientDetailPage({
 
   if (!client) notFound();
   const c = client as Client;
+
+  // Membresías del cliente (más reciente primero) y sus últimas ventas.
+  const [{ data: memberships }, { data: sales }] = await Promise.all([
+    supabase
+      .from("client_memberships")
+      .select("*")
+      .eq("client_id", id)
+      .order("end_date", { ascending: false })
+      .limit(20),
+    supabase
+      .from("sales")
+      .select("id, folio, total, payment_method, status, sold_at")
+      .eq("client_id", id)
+      .order("sold_at", { ascending: false })
+      .limit(10),
+  ]);
+
+  const memRows = (memberships ?? []) as ClientMembership[];
+  const saleRows = (sales ?? []) as Pick<
+    Sale,
+    "id" | "folio" | "total" | "payment_method" | "status" | "sold_at"
+  >[];
+  // Membresía vigente: la activa con vencimiento más lejano.
+  const current =
+    memRows.find((m) => membershipStatus(m) === "active") ?? null;
 
   const photoUrl = await getSignedUrl(CLIENT_PHOTOS_BUCKET, c.photo_url);
   const age = ageFromBirthDate(c.birth_date);
@@ -216,19 +255,173 @@ export default async function ClientDetailPage({
         </CardContent>
       </Card>
 
-      {/* Placeholder honesto: membresías/pagos llegan en el siguiente slice */}
+      {/* Membresía vigente */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="flex items-center gap-2 text-base">
             <CreditCard className="h-4 w-4" />
-            Membresías y pagos
+            Membresía
           </CardTitle>
-          <CardDescription>
-            El historial de membresías, pagos y accesos aparecerá aquí al
-            completar el módulo de membresías (Fase 1).
-          </CardDescription>
+          <Link
+            href="/pos"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            <Plus className="h-4 w-4" />
+            Vender / renovar
+          </Link>
         </CardHeader>
+        <CardContent>
+          {current ? (
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+              <div>
+                <p className="text-sm text-muted-foreground">Plan</p>
+                <p className="font-medium">{current.plan_name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Vigencia</p>
+                <p className="font-medium">
+                  {new Date(current.start_date).toLocaleDateString("es-MX")} →{" "}
+                  {new Date(current.end_date).toLocaleDateString("es-MX")}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Días restantes</p>
+                <p className="text-xl font-bold text-success">
+                  {daysRemaining(current.end_date)}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Sin membresía activa.{" "}
+              <Link href="/pos" className="text-primary hover:underline">
+                Vender una membresía
+              </Link>
+              .
+            </p>
+          )}
+        </CardContent>
       </Card>
+
+      {/* Historial de membresías */}
+      {memRows.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Historial de membresías
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="px-4 py-2 font-medium">Plan</th>
+                    <th className="px-4 py-2 font-medium">Inicio</th>
+                    <th className="px-4 py-2 font-medium">Vence</th>
+                    <th className="px-4 py-2 font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {memRows.map((m) => {
+                    const st = membershipStatus(m);
+                    return (
+                      <tr
+                        key={m.id}
+                        className="border-b border-border/60 last:border-0"
+                      >
+                        <td className="px-4 py-2 font-medium">{m.plan_name}</td>
+                        <td className="px-4 py-2 text-muted-foreground">
+                          {new Date(m.start_date).toLocaleDateString("es-MX")}
+                        </td>
+                        <td className="px-4 py-2 text-muted-foreground">
+                          {new Date(m.end_date).toLocaleDateString("es-MX")}
+                        </td>
+                        <td className="px-4 py-2">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                              st === "active" && "bg-success/10 text-success",
+                              st === "expired" &&
+                                "bg-amber-500/10 text-amber-600 dark:text-amber-500",
+                              st === "cancelled" &&
+                                "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {MEMBERSHIP_STATUS_LABELS[st]}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Historial de pagos / ventas */}
+      {saleRows.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Historial de pagos</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="px-4 py-2 font-medium">Folio</th>
+                    <th className="px-4 py-2 font-medium">Fecha</th>
+                    <th className="px-4 py-2 font-medium">Pago</th>
+                    <th className="px-4 py-2 text-right font-medium">Total</th>
+                    <th className="px-4 py-2 font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {saleRows.map((s) => (
+                    <tr
+                      key={s.id}
+                      className="border-b border-border/60 last:border-0"
+                    >
+                      <td className="px-4 py-2">
+                        <Link
+                          href={`/pos/sales/${s.id}`}
+                          className="font-mono font-medium hover:text-primary"
+                        >
+                          {formatFolio(s.folio)}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {new Date(s.sold_at).toLocaleDateString("es-MX")}
+                      </td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {paymentLabel(s.payment_method)}
+                      </td>
+                      <td className="px-4 py-2 text-right font-medium">
+                        {formatCurrency(s.total, currency, locale)}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                            s.status === "cancelled"
+                              ? "bg-destructive/10 text-destructive"
+                              : "bg-success/10 text-success",
+                          )}
+                        >
+                          {s.status === "cancelled" ? "Cancelada" : "Completada"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

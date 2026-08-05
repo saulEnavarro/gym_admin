@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
+import { formatCurrency } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -23,19 +24,38 @@ export default async function DashboardPage() {
   const { profile, organization, branding } = await requireSession();
   const supabase = await createClient();
 
-  // RLS garantiza que estos conteos son SÓLO de la organización del usuario.
-  const [{ count: branchCount }, { count: teamCount }, { count: activeClients }] =
-    await Promise.all([
-      supabase.from("branches").select("*", { count: "exact", head: true }),
-      supabase
-        .from("org_members")
-        .select("*", { count: "exact", head: true })
-        .neq("role", "client"),
-      supabase
-        .from("clients")
-        .select("*", { count: "exact", head: true })
-        .eq("is_active", true),
-    ]);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  // RLS garantiza que estos datos son SÓLO de la organización del usuario.
+  const [
+    { count: branchCount },
+    { count: teamCount },
+    { count: activeClients },
+    { data: todaySales },
+  ] = await Promise.all([
+    supabase.from("branches").select("*", { count: "exact", head: true }),
+    supabase
+      .from("org_members")
+      .select("*", { count: "exact", head: true })
+      .neq("role", "client"),
+    supabase
+      .from("clients")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true),
+    supabase
+      .from("sales")
+      .select("total")
+      .eq("status", "completed")
+      .gte("sold_at", startOfToday.toISOString()),
+  ]);
+
+  const revenueToday = (todaySales ?? []).reduce(
+    (sum, s) => sum + Number(s.total),
+    0,
+  );
+  const currency = branding?.currency ?? "MXN";
+  const locale = branding?.locale ?? "es-MX";
 
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "de nuevo";
 
@@ -44,7 +64,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Hola, {firstName}</h1>
         <p className="text-muted-foreground">
-          Resumen de {organization?.name}. Estás en la Fase 0 — Cimientos.
+          Resumen de {organization?.name}.
         </p>
       </div>
 
@@ -82,8 +102,8 @@ export default async function DashboardPage() {
         <StatCard
           icon={<CreditCard className="h-5 w-5" />}
           label="Ingresos de hoy"
-          value="—"
-          hint="Disponible en Fase 1"
+          value={formatCurrency(revenueToday, currency, locale)}
+          hint="Ventas completadas, IVA incluido"
         />
         <StatCard
           icon={<CalendarClock className="h-5 w-5" />}

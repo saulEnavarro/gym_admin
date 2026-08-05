@@ -6,9 +6,11 @@ import { usePathname } from "next/navigation";
 import {
   Dumbbell,
   LayoutDashboard,
-  Building2,
   Users,
   Tags,
+  ShoppingCart,
+  Receipt,
+  Building2,
   Palette,
   ScrollText,
   Settings,
@@ -31,6 +33,8 @@ const NAV: NavItem[] = [
   { label: "Panel", href: "/dashboard", icon: LayoutDashboard, available: true },
   { label: "Clientes", href: "/clients", icon: Users, available: true },
   { label: "Membresías", href: "/memberships", icon: Tags, available: true },
+  { label: "Punto de venta", href: "/pos", icon: ShoppingCart, available: true },
+  { label: "Ventas", href: "/pos/sales", icon: Receipt, available: true },
   { label: "Sucursales", href: "/branches", icon: Building2, available: false },
   { label: "Equipo", href: "/team", icon: Users, available: false },
   { label: "Personalización", href: "/branding", icon: Palette, available: false },
@@ -48,6 +52,14 @@ export function AppShell({ children, org, user }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
+  // Ítem activo = el href más específico (más largo) que coincide con la ruta.
+  // Evita que "/pos" y "/pos/sales" se resalten a la vez.
+  const activeHref = NAV.filter(
+    (i) =>
+      i.available &&
+      (pathname === i.href || pathname.startsWith(`${i.href}/`)),
+  ).sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-border px-5 font-semibold">
@@ -60,8 +72,7 @@ export function AppShell({ children, org, user }: AppShellProps) {
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {NAV.map((item) => {
           const Icon = item.icon;
-          const active =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active = item.href === activeHref;
 
           if (!item.available) {
             return (

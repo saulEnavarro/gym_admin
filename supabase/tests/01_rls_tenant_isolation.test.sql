@@ -8,7 +8,7 @@
 -- ║ `authenticated`, igual que haría Supabase con un usuario real.             ║
 -- ╚══════════════════════════════════════════════════════════════════════════╝
 begin;
-select plan(28);
+select plan(36);
 
 -- IDs del seed.
 -- Org A = Iron Temple (aaaa…), Org B = FitZone (bbbb…)
@@ -124,6 +124,40 @@ select throws_ok(
   'Admin A NO puede crear una membresía en la org B (cross-tenant bloqueado)'
 );
 
+-- POS (Fase 1): venta de membresía atómica + regla de apilado.
+select lives_ok(
+  $$ select public.create_membership_sale(
+       (select id from clients where first_name = 'Juan' limit 1),
+       null,
+       (select id from membership_plans where name = 'Mensual' limit 1),
+       null, 'cash', 'none', 0, null) $$,
+  'Admin A registra una venta de membresía (Mensual, individual)'
+);
+
+select is(
+  (select count(*)::int from sales),
+  1,
+  'La venta quedó registrada en la org A'
+);
+
+select is(
+  (select count(*)::int from client_memberships),
+  1,
+  'La venta otorgó exactamente una membresía'
+);
+
+-- Apilado: tras la venta, el siguiente inicio = vencimiento vigente + 1.
+select is(
+  public.next_membership_start(
+    (select id from clients where first_name = 'Juan' limit 1),
+    current_date),
+  (select max(cm.end_date) + 1
+     from client_memberships cm
+     join clients c on c.id = cm.client_id
+     where c.first_name = 'Juan'),
+  'Renovación anticipada apila sobre el vencimiento vigente'
+);
+
 -- ── Sesión: Recepción A (no admin) ───────────────────────────────────────────
 set local role postgres;
 set local request.jwt.claims to '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
@@ -179,6 +213,22 @@ select throws_ok(
   'Recepción A (no admin/gerente) NO puede crear membresías'
 );
 
+-- Recepción SÍ puede vender (operación de mostrador).
+select lives_ok(
+  $$ select public.create_membership_sale(
+       (select id from clients where first_name = 'Ana' limit 1),
+       null,
+       (select id from membership_plans where name = 'Semanal' limit 1),
+       null, 'card', 'none', 0, null) $$,
+  'Recepción A SÍ puede registrar una venta de membresía'
+);
+
+select is(
+  (select count(*)::int from sales),
+  2,
+  'La org A acumula 2 ventas (admin + recepción)'
+);
+
 -- ── Sesión: Admin B ──────────────────────────────────────────────────────────
 set local role postgres;
 set local request.jwt.claims to '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
@@ -205,6 +255,18 @@ select is(
   (select count(*)::int from membership_plans),
   2,
   'Admin B ve sólo sus 2 membresías (ninguna de la org A)'
+);
+
+select is(
+  (select count(*)::int from sales),
+  0,
+  'Admin B NO ve ninguna venta de la org A'
+);
+
+select is(
+  (select count(*)::int from client_memberships),
+  0,
+  'Admin B NO ve ninguna membresía otorgada de la org A'
 );
 
 select * from finish();

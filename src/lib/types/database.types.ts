@@ -445,12 +445,152 @@ export type Database = {
         };
         Relationships: [];
       };
+      sales: {
+        Row: {
+          id: string;
+          org_id: string;
+          branch_id: string | null;
+          folio: number;
+          client_id: string;
+          partner_client_id: string | null;
+          cashier_id: string | null;
+          cash_session_id: string | null;
+          subtotal: number;
+          discount_type: "none" | "amount" | "percent";
+          discount_value: number;
+          discount_amount: number;
+          tax_amount: number;
+          total: number;
+          payment_method: "cash" | "card" | "transfer";
+          status: "completed" | "cancelled";
+          cancelled_at: string | null;
+          cancelled_by: string | null;
+          cancel_reason: string | null;
+          refund_amount: number | null;
+          notes: string | null;
+          sold_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          branch_id?: string | null;
+          folio: number;
+          client_id: string;
+          partner_client_id?: string | null;
+          cashier_id?: string | null;
+          cash_session_id?: string | null;
+          subtotal: number;
+          discount_type?: "none" | "amount" | "percent";
+          discount_value?: number;
+          discount_amount?: number;
+          tax_amount?: number;
+          total: number;
+          payment_method: "cash" | "card" | "transfer";
+          status?: "completed" | "cancelled";
+          notes?: string | null;
+          sold_at?: string;
+        };
+        Update: {
+          status?: "completed" | "cancelled";
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          cancel_reason?: string | null;
+          refund_amount?: number | null;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
+      sale_items: {
+        Row: {
+          id: string;
+          sale_id: string;
+          org_id: string;
+          membership_plan_id: string | null;
+          description: string;
+          unit_price: number;
+          quantity: number;
+          line_total: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          sale_id: string;
+          org_id: string;
+          membership_plan_id?: string | null;
+          description: string;
+          unit_price: number;
+          quantity?: number;
+          line_total: number;
+          created_at?: string;
+        };
+        Update: {
+          description?: string;
+          unit_price?: number;
+          quantity?: number;
+          line_total?: number;
+        };
+        Relationships: [];
+      };
+      client_memberships: {
+        Row: {
+          id: string;
+          org_id: string;
+          client_id: string;
+          membership_plan_id: string | null;
+          plan_name: string;
+          sale_id: string | null;
+          start_date: string;
+          end_date: string;
+          status: "active" | "expired" | "cancelled";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          client_id: string;
+          membership_plan_id?: string | null;
+          plan_name: string;
+          sale_id?: string | null;
+          start_date: string;
+          end_date: string;
+          status?: "active" | "expired" | "cancelled";
+        };
+        Update: {
+          status?: "active" | "expired" | "cancelled";
+          end_date?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
       next_counter: {
         Args: { p_org: string; p_name: string };
         Returns: number;
+      };
+      next_membership_start: {
+        Args: { p_client: string; p_from: string };
+        Returns: string;
+      };
+      create_membership_sale: {
+        Args: {
+          p_client: string;
+          p_partner: string | null;
+          p_plan: string;
+          p_branch: string | null;
+          p_payment_method: string;
+          p_discount_type: string;
+          p_discount_value: number;
+          p_notes: string | null;
+        };
+        Returns: string;
+      };
+      cancel_sale: {
+        Args: { p_sale: string; p_reason: string | null };
+        Returns: undefined;
       };
       current_user_org_ids: { Args: Record<string, never>; Returns: string[] };
       current_user_branch_ids: { Args: Record<string, never>; Returns: string[] };
@@ -487,3 +627,8 @@ export type MembershipPlanInsert =
   Database["public"]["Tables"]["membership_plans"]["Insert"];
 export type MembershipPlanUpdate =
   Database["public"]["Tables"]["membership_plans"]["Update"];
+export type Sale = Database["public"]["Tables"]["sales"]["Row"];
+export type SaleItem = Database["public"]["Tables"]["sale_items"]["Row"];
+export type ClientMembership =
+  Database["public"]["Tables"]["client_memberships"]["Row"];
+export type PaymentMethod = Sale["payment_method"];

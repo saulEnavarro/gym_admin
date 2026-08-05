@@ -119,7 +119,17 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 ## 7. Riesgos abiertos / decisiones pendientes
 
 - [x] **IVA (resuelto 2026-06-26):** los precios capturados son **base gravable, SIN IVA**. El IVA (16%) se calcula y se suma **aparte** en el ticket, el total cobrado y los reportes. Implica: cada producto/membresía guarda precio sin IVA; el POS desglosa subtotal + IVA + total.
-- [ ] Regla de membresía "Parejas": ¿venta vinculada? ¿qué pasa si solo uno renueva?
-- [ ] Periodo de gracia de acceso para membresías vencidas
+- [x] **Parejas (resuelto 2026-07-16):** venta **vinculada** (una venta liga a 2 clientes con vencimiento compartido, total = 2 × precio). Si **solo uno renueva**, se le vende una **membresía individual** al precio individual y el vínculo de pareja se rompe.
+- [ ] Periodo de gracia de acceso para membresías vencidas *(se decidirá en el slice de Acceso, Fase 3)*
 - [ ] ¿Hay datos existentes (clientes/inventario) que migrar?
-- [ ] Modo offline/contingencia del POS si se cae internet (definir en Fase 1)
+- [ ] Modo offline/contingencia del POS si se cae internet *(post-MVP; el POS del MVP requiere conexión)*
+
+### Decisiones del POS (resueltas 2026-07-16)
+
+- **Renovación anticipada:** la nueva vigencia **apila** sobre el vencimiento actual (empieza el día siguiente al vencimiento vigente); el cliente no pierde días restantes. Si ya está vencida, empieza el día de la venta.
+- **Métodos de pago (MVP):** **efectivo, tarjeta y transferencia**, **un solo método por venta** (sin pago dividido). Mercado Pago (en línea) llega en Fase 2.
+- **Descuento:** por **monto o porcentaje**, a nivel de venta, aplicado sobre la base **antes** de IVA. Libre para recepción (topes por rol, después).
+- **Estado de pago:** toda venta se **liquida al momento** (pagada/completada); sin ventas a crédito en el MVP.
+- **Reembolsos:** **total** si se cancela el **mismo día/turno** (corrección de cobro); después, solo **admin**. La cancelación revierte la membresía otorgada y registra un **egreso** en caja.
+- **Folio:** consecutivo por organización (contador `org_counters`, formato `V-0001`).
+- **Caja/turno:** la venta guarda `cash_session_id` **opcional** en este slice; el turno se vuelve **obligatorio** en el slice de Caja.
