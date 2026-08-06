@@ -131,7 +131,7 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - **Arqueo:** sólo cuenta **efectivo**. `esperado = fondo inicial + ventas en efectivo + ingresos en efectivo − egresos en efectivo`; `diferencia = contado − esperado` (negativo = faltante). Las ventas con tarjeta/transferencia y sus reembolsos aparecen en el corte pero no mueven el cajón.
 - **Ventas canceladas en el arqueo:** el efectivo esperado incluye las ventas canceladas **a propósito**. El dinero entró al cajón y el reembolso sale como egreso; excluir la venta descontaría dos veces.
 - **Reembolsos:** cancelar una venta registra automáticamente el egreso en el turno abierto de **quien cancela**. Sin turno abierto no se puede cancelar (el dinero que sale tiene que caer en algún turno).
-- **Efectivo esperado visible antes de cerrar:** de todos modos es derivable de datos que el cajero ve; el control real es que la diferencia queda registrada, auditada e inmutable al cerrar. Verla antes permite detectar un movimiento sin capturar en vez de cerrar con un descuadre inexplicable.
+- **Arqueo a ciegas:** mientras el turno está abierto, la app **no** muestra el fondo inicial ni el efectivo esperado (ni en Caja, ni en el POS, ni en el detalle del corte). Si el cajero viera la cifra la teclearía al cerrar y el control de diferencias no mediría nada. Durante el turno sí ve su reporte de ventas y los movimientos que capturó, que necesita para operar. El arqueo completo —fondo, esperado, contado y diferencia— se revela en el corte una vez cerrado.
 
 ### Decisiones del POS (resueltas 2026-07-16)
 

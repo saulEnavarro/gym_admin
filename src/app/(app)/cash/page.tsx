@@ -5,6 +5,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Clock,
+  EyeOff,
   History,
   MapPin,
 } from "lucide-react";
@@ -62,12 +63,14 @@ export default async function CashPage() {
   const { session, branchName, totals } = open;
   const movements = await getSessionMovements(session.id);
 
+  // Arqueo a ciegas: mientras el turno está abierto NO se muestran el fondo
+  // inicial ni el efectivo esperado. Si el cajero viera la cifra, la tecleraría
+  // al cerrar y el control de diferencias sería puro trámite. Lo que sí ve es
+  // su reporte de ventas y los movimientos que capturó, que necesita para
+  // operar. El arqueo completo se revela en el corte, ya cerrado el turno.
   const cashSales = Number(totals?.cash_sales ?? 0);
   const cardSales = Number(totals?.card_sales ?? 0);
   const transferSales = Number(totals?.transfer_sales ?? 0);
-  const cashIncome = Number(totals?.cash_income ?? 0);
-  const cashExpense = Number(totals?.cash_expense ?? 0);
-  const expected = Number(totals?.expected_cash ?? session.opening_float);
   const salesTotal = cashSales + cardSales + transferSales;
 
   return (
@@ -102,22 +105,16 @@ export default async function CashPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Arqueo en curso */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Tile label="Fondo inicial" value={money(session.opening_float)} />
-            <Tile label="Ventas en efectivo" value={money(cashSales)} />
-            <Tile
-              label="Otros movimientos"
-              value={`${cashIncome > 0 ? `+${money(cashIncome)} ` : ""}${
-                cashExpense > 0 ? `−${money(cashExpense)}` : ""
-              }`.trim() || money(0)}
-            />
-            <Tile
-              label="Efectivo esperado"
-              value={money(expected)}
-              hint="Lo que debe haber en el cajón"
-              strong
-            />
+          <div className="flex items-start gap-3 rounded-md border border-dashed border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            <EyeOff className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              <span className="font-medium text-foreground">
+                Arqueo a ciegas.
+              </span>{" "}
+              El efectivo esperado no se muestra durante el turno: al cerrar
+              cuentas el cajón y capturas el total. El sistema calcula la
+              diferencia y la deja registrada en el corte.
+            </p>
           </div>
 
           {/* Ventas del turno por método */}

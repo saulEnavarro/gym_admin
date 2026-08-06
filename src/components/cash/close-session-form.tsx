@@ -19,11 +19,10 @@ function SubmitButton() {
 }
 
 /**
- * El turno muestra el efectivo esperado antes de cerrar (de todos modos es
- * fondo + ventas en efectivo − egresos, todo visible). El control no está en
- * ocultarlo sino en que la diferencia queda registrada, auditada e inmutable
- * al cerrar; ver la cifra antes le permite al cajero detectar un movimiento
- * sin capturar en vez de cerrar con un descuadre inexplicable.
+ * Arqueo a ciegas: ni este formulario ni la pantalla de caja muestran el
+ * efectivo esperado. Si el cajero lo viera, teclearía esa misma cifra y el
+ * control de diferencias no mediría nada. El esperado, el contado y la
+ * diferencia se revelan en el corte una vez cerrado el turno.
  */
 export function CloseSessionForm({ sessionId }: { sessionId: string }) {
   const [open, setOpen] = useState(false);
@@ -51,8 +50,8 @@ export function CloseSessionForm({ sessionId }: { sessionId: string }) {
       <div>
         <p className="font-medium">Arqueo de caja</p>
         <p className="text-sm text-muted-foreground">
-          Cuenta el efectivo del cajón y captura el total. El sistema lo compara
-          contra lo esperado y registra la diferencia.
+          Cuenta el efectivo del cajón y captura el total, sin consultar el
+          sistema. Al cerrar verás el corte con lo esperado y la diferencia.
         </p>
       </div>
 

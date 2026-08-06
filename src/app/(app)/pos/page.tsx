@@ -92,12 +92,13 @@ export default async function PosPage() {
                 {session.branchName}
               </span>
             )}
+            {/* Nunca el efectivo esperado: el arqueo es a ciegas (ver /cash). */}
             <span className="text-muted-foreground">
-              Efectivo esperado:{" "}
+              Vendido en el turno:{" "}
               {formatCurrency(
-                Number(
-                  session.totals?.expected_cash ?? session.session.opening_float,
-                ),
+                Number(session.totals?.cash_sales ?? 0) +
+                  Number(session.totals?.card_sales ?? 0) +
+                  Number(session.totals?.transfer_sales ?? 0),
                 currency,
                 locale,
               )}

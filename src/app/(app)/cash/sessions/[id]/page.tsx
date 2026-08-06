@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, ArrowDownLeft, ArrowUpRight, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
 import {
@@ -72,9 +72,10 @@ export default async function CashSessionDetailPage({
   const closed = session.status === "closed";
   const difference = Number(session.difference ?? 0);
   const verdict = arqueoVerdict(difference);
-  const expected = Number(
-    session.expected_cash ?? totals?.expected_cash ?? session.opening_float,
-  );
+  // El arqueo (fondo, esperado, contado, diferencia) sólo se revela con el
+  // turno CERRADO: mientras siga abierto, verlo aquí anularía el arqueo a
+  // ciegas. `expected_cash` se congela al cerrar, así que no se recalcula.
+  const expected = Number(session.expected_cash ?? 0);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -111,56 +112,62 @@ export default async function CashSessionDetailPage({
         </CardHeader>
 
         <CardContent className="space-y-6 text-sm">
-          {/* Arqueo */}
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Arqueo
-            </p>
-            <Row label="Fondo inicial">{money(session.opening_float)}</Row>
-            <Row label="Ventas en efectivo">
-              {money(Number(totals?.cash_sales_gross ?? 0))}
-            </Row>
-            {Number(totals?.cash_income ?? 0) > 0 && (
-              <Row label="Ingresos en efectivo">
-                +{money(Number(totals?.cash_income ?? 0))}
+          {/* Arqueo — sólo con el turno cerrado (arqueo a ciegas). */}
+          {closed ? (
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Arqueo
+              </p>
+              <Row label="Fondo inicial">{money(session.opening_float)}</Row>
+              <Row label="Ventas en efectivo">
+                {money(Number(totals?.cash_sales_gross ?? 0))}
               </Row>
-            )}
-            {Number(totals?.cash_expense ?? 0) > 0 && (
-              <Row label="Egresos en efectivo" muted>
-                −{money(Number(totals?.cash_expense ?? 0))}
-              </Row>
-            )}
-            <div className="border-t border-border pt-2">
-              <Row label="Efectivo esperado" strong>
-                {money(expected)}
-              </Row>
-            </div>
-            {closed && (
-              <>
-                <Row label="Efectivo contado" strong>
-                  {money(Number(session.counted_cash ?? 0))}
+              {Number(totals?.cash_income ?? 0) > 0 && (
+                <Row label="Ingresos en efectivo">
+                  +{money(Number(totals?.cash_income ?? 0))}
                 </Row>
-                <div className="border-t border-border pt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">Diferencia</span>
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
-                        verdict.tone === "ok" && "bg-success/10 text-success",
-                        verdict.tone === "short" &&
-                          "bg-destructive/10 text-destructive",
-                        verdict.tone === "over" && "bg-primary/10 text-primary",
-                      )}
-                    >
-                      {verdict.tone === "ok"
-                        ? verdict.label
-                        : `${verdict.label} · ${money(Math.abs(difference))}`}
-                    </span>
-                  </div>
+              )}
+              {Number(totals?.cash_expense ?? 0) > 0 && (
+                <Row label="Egresos en efectivo" muted>
+                  −{money(Number(totals?.cash_expense ?? 0))}
+                </Row>
+              )}
+              <div className="border-t border-border pt-2">
+                <Row label="Efectivo esperado" strong>
+                  {money(expected)}
+                </Row>
+              </div>
+              <Row label="Efectivo contado" strong>
+                {money(Number(session.counted_cash ?? 0))}
+              </Row>
+              <div className="border-t border-border pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Diferencia</span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
+                      verdict.tone === "ok" && "bg-success/10 text-success",
+                      verdict.tone === "short" &&
+                        "bg-destructive/10 text-destructive",
+                      verdict.tone === "over" && "bg-primary/10 text-primary",
+                    )}
+                  >
+                    {verdict.tone === "ok"
+                      ? verdict.label
+                      : `${verdict.label} · ${money(Math.abs(difference))}`}
+                  </span>
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3 rounded-md border border-dashed border-border bg-muted/30 px-4 py-3 text-muted-foreground">
+              <EyeOff className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                Turno en curso. El arqueo —fondo inicial, efectivo esperado,
+                contado y diferencia— se revela al cerrarlo.
+              </p>
+            </div>
+          )}
 
           {/* Ventas por método */}
           <div className="space-y-1 border-t border-border pt-4">
