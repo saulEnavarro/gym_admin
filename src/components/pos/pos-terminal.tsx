@@ -49,13 +49,11 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 export function PosTerminal({
   clients,
   plans,
-  branches,
   currency,
   locale,
 }: {
   clients: ClientOption[];
   plans: PlanOption[];
-  branches: { id: string; name: string }[];
   currency: string;
   locale: string;
 }) {
@@ -164,22 +162,6 @@ export function PosTerminal({
                 ))}
               </Select>
             </div>
-
-            {branches.length > 1 && (
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="branch_id">Sucursal</Label>
-                <Select id="branch_id" name="branch_id" defaultValue={branches[0]?.id}>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            )}
-            {branches.length === 1 && branches[0] && (
-              <input type="hidden" name="branch_id" value={branches[0].id} />
-            )}
 
             <div className="space-y-2">
               <Label htmlFor="discount_type">Descuento</Label>

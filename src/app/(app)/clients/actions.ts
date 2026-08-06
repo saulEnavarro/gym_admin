@@ -6,7 +6,12 @@ import { z } from "zod";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
 import { isMinor } from "@/lib/clients/helpers";
-import type { ClientInsert } from "@/lib/types/database.types";
+import { emptyToUndefined } from "@/lib/forms";
+import type {
+  ClientInsert,
+  ClientUpdate,
+  TablesInsert,
+} from "@/lib/types/database.types";
 
 const CLIENT_PHOTOS_BUCKET = "client-photos";
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -14,9 +19,6 @@ const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export type ClientFormState = { error: string | null };
 
-// Convierte "" en undefined para que los opcionales de Zod funcionen con FormData.
-const emptyToUndefined = (v: unknown) =>
-  typeof v === "string" && v.trim() === "" ? undefined : v;
 
 const clientSchema = z
   .object({
@@ -163,9 +165,11 @@ export async function createClientRecord(
     created_by: user.id,
   };
 
+  // El `as` repone el tipo estricto: `member_number` es NOT NULL en la tabla
+  // pero lo asigna el trigger, así que aquí va ausente a propósito.
   const { data: created, error } = await supabase
     .from("clients")
-    .insert(insert)
+    .insert(insert as TablesInsert<"clients">)
     .select("id")
     .single();
 
@@ -215,7 +219,7 @@ export async function updateClientRecord(
   const d = parsed.data;
   const supabase = await createSupabaseClient();
 
-  const update: ClientInsert = {
+  const update: ClientUpdate = {
     org_id: membership.org_id, // RLS igualmente lo restringe
     branch_id: d.branch_id ?? null,
     first_name: d.first_name,

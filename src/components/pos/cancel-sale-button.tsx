@@ -41,13 +41,8 @@ export function CancelSaleButton({ id }: { id: string }) {
           onClick={() =>
             startTransition(async () => {
               setError(null);
-              try {
-                await cancelSale(id, reason);
-              } catch (e) {
-                setError(
-                  e instanceof Error ? e.message : "No se pudo cancelar.",
-                );
-              }
+              const { error } = await cancelSale(id, reason);
+              if (error) setError(error);
             })
           }
         >

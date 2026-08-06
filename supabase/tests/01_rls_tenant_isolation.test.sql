@@ -8,7 +8,7 @@
 -- ║ `authenticated`, igual que haría Supabase con un usuario real.             ║
 -- ╚══════════════════════════════════════════════════════════════════════════╝
 begin;
-select plan(36);
+select plan(57);
 
 -- IDs del seed.
 -- Org A = Iron Temple (aaaa…), Org B = FitZone (bbbb…)
@@ -124,13 +124,44 @@ select throws_ok(
   'Admin A NO puede crear una membresía en la org B (cross-tenant bloqueado)'
 );
 
+-- Caja (Fase 1): sin turno abierto no se puede vender.
+select throws_ok(
+  $$ select public.create_membership_sale(
+       (select id from clients where first_name = 'Juan' limit 1),
+       null,
+       (select id from membership_plans where name = 'Mensual' limit 1),
+       'cash', 'none', 0, null) $$,
+  'P0001',
+  NULL,
+  'Sin turno de caja abierto NO se puede registrar una venta'
+);
+
+select lives_ok(
+  $$ select public.open_cash_session(
+       'a1111111-1111-1111-1111-111111111111', 500, 'Apertura de prueba') $$,
+  'Admin A abre su turno de caja con $500 de fondo inicial'
+);
+
+select ok(
+  public.current_cash_session() is not null,
+  'current_cash_session() devuelve el turno abierto del cajero'
+);
+
+select throws_ok(
+  $$ select public.open_cash_session(
+       'a1111111-1111-1111-1111-111111111111', 100, null) $$,
+  'P0001',
+  NULL,
+  'Un cajero NO puede tener dos turnos abiertos a la vez'
+);
+
 -- POS (Fase 1): venta de membresía atómica + regla de apilado.
 select lives_ok(
   $$ select public.create_membership_sale(
        (select id from clients where first_name = 'Juan' limit 1),
        null,
        (select id from membership_plans where name = 'Mensual' limit 1),
-       null, 'cash', 'none', 0, null) $$,
+       'cash', 'none', 0, null) $$,
   'Admin A registra una venta de membresía (Mensual, individual)'
 );
 
@@ -156,6 +187,49 @@ select is(
      join clients c on c.id = cm.client_id
      where c.first_name = 'Juan'),
   'Renovación anticipada apila sobre el vencimiento vigente'
+);
+
+-- Arqueo: fondo 500 + venta en efectivo (450 + 16% IVA = 522) = 1022 esperados.
+select is(
+  (select t.expected_cash from cash_session_totals t
+    where t.cash_session_id = public.current_cash_session()),
+  1022.00::numeric,
+  'El efectivo esperado suma el fondo inicial y la venta en efectivo'
+);
+
+select lives_ok(
+  $$ select public.register_cash_movement(
+       'expense', 'supplier', 100, 'cash', 'Compra de garrafones') $$,
+  'Admin A registra un egreso en efectivo del turno'
+);
+
+select is(
+  (select t.expected_cash from cash_session_totals t
+    where t.cash_session_id = public.current_cash_session()),
+  922.00::numeric,
+  'El egreso en efectivo baja el esperado en caja'
+);
+
+-- Cancelar la venta genera automáticamente el egreso del reembolso (§7 · POS).
+select lives_ok(
+  $$ select public.cancel_sale(
+       (select id from sales where status = 'completed' limit 1),
+       'Cobro equivocado') $$,
+  'Admin A cancela la venta y se registra el reembolso en caja'
+);
+
+select is(
+  (select count(*)::int from cash_movements),
+  2,
+  'El turno acumula 2 movimientos (egreso manual + reembolso)'
+);
+
+-- La venta cancelada entró y salió del cajón: neta cero. Queda 500 − 100 = 400.
+select is(
+  (select t.expected_cash from cash_session_totals t
+    where t.cash_session_id = public.current_cash_session()),
+  400.00::numeric,
+  'El reembolso no descuenta dos veces: la venta cancelada neta cero'
 );
 
 -- ── Sesión: Recepción A (no admin) ───────────────────────────────────────────
@@ -213,13 +287,39 @@ select throws_ok(
   'Recepción A (no admin/gerente) NO puede crear membresías'
 );
 
+-- El turno de Admin A no le sirve a Recepción: cada cajero abre el suyo.
+select throws_ok(
+  $$ select public.create_membership_sale(
+       (select id from clients where first_name = 'Ana' limit 1),
+       null,
+       (select id from membership_plans where name = 'Semanal' limit 1),
+       'card', 'none', 0, null) $$,
+  'P0001',
+  NULL,
+  'Recepción A NO hereda el turno de otro cajero para vender'
+);
+
+select throws_ok(
+  $$ select public.open_cash_session(
+       'a2222222-2222-2222-2222-222222222222', 200, null) $$,
+  '42501',
+  NULL,
+  'Recepción A NO puede abrir turno en una sucursal que no opera'
+);
+
+select lives_ok(
+  $$ select public.open_cash_session(
+       'a1111111-1111-1111-1111-111111111111', 200, null) $$,
+  'Recepción A abre su turno en la sucursal que sí opera (Centro)'
+);
+
 -- Recepción SÍ puede vender (operación de mostrador).
 select lives_ok(
   $$ select public.create_membership_sale(
        (select id from clients where first_name = 'Ana' limit 1),
        null,
        (select id from membership_plans where name = 'Semanal' limit 1),
-       null, 'card', 'none', 0, null) $$,
+       'card', 'none', 0, null) $$,
   'Recepción A SÍ puede registrar una venta de membresía'
 );
 
@@ -227,6 +327,60 @@ select is(
   (select count(*)::int from sales),
   2,
   'La org A acumula 2 ventas (admin + recepción)'
+);
+
+-- El arqueo es de cada quien: una venta con tarjeta no toca el cajón.
+select is(
+  (select t.expected_cash from cash_session_totals t
+    where t.cash_session_id = public.current_cash_session()),
+  200.00::numeric,
+  'Una venta con tarjeta no altera el efectivo esperado del turno'
+);
+
+select throws_ok(
+  $$ select public.close_cash_session(
+       (select id from cash_sessions
+         where opened_by = '11111111-1111-1111-1111-111111111111'),
+       0, null) $$,
+  '42501',
+  NULL,
+  'Recepción A NO puede cerrar el turno de otro cajero'
+);
+
+-- ── Sesión: Admin A de nuevo — cierre de turno y arqueo ──────────────────────
+set local role postgres;
+set local request.jwt.claims to '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+set local role authenticated;
+
+select lives_ok(
+  $$ select public.close_cash_session(
+       (select id from cash_sessions
+         where opened_by = '11111111-1111-1111-1111-111111111111'),
+       380, 'Faltó dinero en el cajón') $$,
+  'Admin A cierra su turno capturando el efectivo contado'
+);
+
+select is(
+  (select cs.difference from cash_sessions cs
+    where cs.opened_by = '11111111-1111-1111-1111-111111111111'),
+  -20.00::numeric,
+  'El arqueo detecta el faltante: contado 380 − esperado 400 = −20'
+);
+
+select ok(
+  public.current_cash_session() is null,
+  'Cerrado el turno, el cajero ya no tiene turno abierto'
+);
+
+select throws_ok(
+  $$ select public.create_membership_sale(
+       (select id from clients where first_name = 'Juan' limit 1),
+       null,
+       (select id from membership_plans where name = 'Visita' limit 1),
+       'cash', 'none', 0, null) $$,
+  'P0001',
+  NULL,
+  'Con el turno cerrado ya no se pueden registrar ventas'
 );
 
 -- ── Sesión: Admin B ──────────────────────────────────────────────────────────
@@ -267,6 +421,18 @@ select is(
   (select count(*)::int from client_memberships),
   0,
   'Admin B NO ve ninguna membresía otorgada de la org A'
+);
+
+select is(
+  (select count(*)::int from cash_sessions),
+  0,
+  'Admin B NO ve ningún turno de caja de la org A'
+);
+
+select is(
+  (select count(*)::int from cash_movements),
+  0,
+  'Admin B NO ve ningún movimiento de caja de la org A'
 );
 
 select * from finish();

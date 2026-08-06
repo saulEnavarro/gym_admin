@@ -57,17 +57,17 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 ## 4. Plan por fases
 
 ### Fase 0 — Cimientos (no negociable antes de features)
-- [ ] Esquema multi-tenant (`org_id` / `sucursal_id`) + RLS en **todas** las tablas
-- [ ] Auth con roles (Admin, Gerente, Recepcionista, Instructor, Cliente) y permisos por sucursal
-- [ ] Personalización por organización (nombre, logo, colores, tipografía, moneda, idioma)
-- [ ] Logs de auditoría + backups (gestionados por Supabase)
-- [ ] Modo claro/oscuro, layout responsive base
+- [x] Esquema multi-tenant (`org_id` / `sucursal_id`) + RLS en **todas** las tablas
+- [x] Auth con roles (Admin, Gerente, Recepcionista, Instructor, Cliente) y permisos por sucursal
+- [x] Personalización por organización (nombre, logo, colores, tipografía, moneda, idioma)
+- [x] Logs de auditoría + backups (gestionados por Supabase)
+- [x] Modo claro/oscuro, layout responsive base
 
 ### Fase 1 — Núcleo operativo (MVP-A)
-- [ ] Clientes: ficha completa, foto, número consecutivo por organización, contacto de emergencia, consentimiento de datos (LFPDPPP)
-- [ ] Membresías editables (Mensual, Parejas, Estudiantes, Quincenal, Semanal, Visita)
-- [ ] POS / Venta de membresías con **devoluciones, cancelaciones y reembolsos** (omitido en el prompt original)
-- [ ] Caja: apertura/cierre de turno con fondo inicial y arqueo (control de diferencias)
+- [x] Clientes: ficha completa, foto, número consecutivo por organización, contacto de emergencia, consentimiento de datos (LFPDPPP)
+- [x] Membresías editables (Mensual, Parejas, Estudiantes, Quincenal, Semanal, Visita)
+- [x] POS / Venta de membresías con **devoluciones, cancelaciones y reembolsos** (omitido en el prompt original)
+- [x] Caja: apertura/cierre de turno con fondo inicial y arqueo (control de diferencias)
 - [ ] Cortes diario / semanal / mensual + gráficas financieras
 - [ ] Export Excel / CSV
 
@@ -123,6 +123,15 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - [ ] Periodo de gracia de acceso para membresías vencidas *(se decidirá en el slice de Acceso, Fase 3)*
 - [ ] ¿Hay datos existentes (clientes/inventario) que migrar?
 - [ ] Modo offline/contingencia del POS si se cae internet *(post-MVP; el POS del MVP requiere conexión)*
+
+### Decisiones de Caja (resueltas 2026-08-05)
+
+- **Ámbito del turno:** el turno es **por cajero**, no por sucursal. Cada usuario abre y cierra el suyo (un solo turno abierto por persona), de modo que una diferencia en el arqueo tiene un responsable claro y alimenta «ventas por empleado».
+- **Turno obligatorio:** **toda** venta —efectivo, tarjeta o transferencia— exige turno abierto, para que el corte del turno esté completo. La sucursal de la venta la determina el turno, no el formulario del POS.
+- **Arqueo:** sólo cuenta **efectivo**. `esperado = fondo inicial + ventas en efectivo + ingresos en efectivo − egresos en efectivo`; `diferencia = contado − esperado` (negativo = faltante). Las ventas con tarjeta/transferencia y sus reembolsos aparecen en el corte pero no mueven el cajón.
+- **Ventas canceladas en el arqueo:** el efectivo esperado incluye las ventas canceladas **a propósito**. El dinero entró al cajón y el reembolso sale como egreso; excluir la venta descontaría dos veces.
+- **Reembolsos:** cancelar una venta registra automáticamente el egreso en el turno abierto de **quien cancela**. Sin turno abierto no se puede cancelar (el dinero que sale tiene que caer en algún turno).
+- **Efectivo esperado visible antes de cerrar:** de todos modos es derivable de datos que el cajero ve; el control real es que la diferencia queda registrada, auditada e inmutable al cerrar. Verla antes permite detectar un movimiento sin capturar en vez de cerrar con un descuadre inexplicable.
 
 ### Decisiones del POS (resueltas 2026-07-16)
 

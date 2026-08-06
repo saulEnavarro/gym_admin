@@ -5,12 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
+import { emptyToUndefined } from "@/lib/forms";
 import type { MembershipPlanInsert } from "@/lib/types/database.types";
 
 export type PlanFormState = { error: string | null };
-
-const emptyToUndefined = (v: unknown) =>
-  typeof v === "string" && v.trim() === "" ? undefined : v;
 
 const planSchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio").max(120),

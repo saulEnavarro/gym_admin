@@ -5,11 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
+import { emptyToUndefined } from "@/lib/forms";
+import type { RpcArgs, RpcArgsNullable } from "@/lib/types/database.types";
 
 export type SaleFormState = { error: string | null };
-
-const emptyToUndefined = (v: unknown) =>
-  typeof v === "string" && v.trim() === "" ? undefined : v;
 
 const saleSchema = z.object({
   client_id: z.string().uuid("Selecciona un cliente"),
@@ -18,7 +17,6 @@ const saleSchema = z.object({
     z.string().uuid().optional(),
   ),
   plan_id: z.string().uuid("Selecciona una membresía"),
-  branch_id: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
   payment_method: z.enum(["cash", "card", "transfer"], {
     errorMap: () => ({ message: "Selecciona un método de pago" }),
   }),
@@ -39,7 +37,6 @@ export async function createSale(
     client_id: formData.get("client_id"),
     partner_client_id: formData.get("partner_client_id"),
     plan_id: formData.get("plan_id"),
-    branch_id: formData.get("branch_id"),
     payment_method: formData.get("payment_method"),
     discount_type: formData.get("discount_type") ?? "none",
     discount_value: formData.get("discount_value") ?? 0,
@@ -52,16 +49,24 @@ export async function createSale(
   const d = parsed.data;
   const supabase = await createSupabaseClient();
 
-  const { data: saleId, error } = await supabase.rpc("create_membership_sale", {
+  // La sucursal y el turno los toma la BD del turno de caja abierto del cajero.
+  const args: RpcArgsNullable<
+    "create_membership_sale",
+    "p_partner" | "p_notes"
+  > = {
     p_client: d.client_id,
     p_partner: d.partner_client_id ?? null,
     p_plan: d.plan_id,
-    p_branch: d.branch_id ?? null,
     p_payment_method: d.payment_method,
     p_discount_type: d.discount_type,
     p_discount_value: d.discount_value,
     p_notes: d.notes ?? null,
-  });
+  };
+
+  const { data: saleId, error } = await supabase.rpc(
+    "create_membership_sale",
+    args as RpcArgs<"create_membership_sale">,
+  );
 
   if (error || !saleId) {
     return { error: businessMessage(error?.message) };
@@ -69,22 +74,39 @@ export async function createSale(
 
   revalidatePath("/pos/sales");
   revalidatePath("/clients");
+  revalidatePath("/cash");
   redirect(`/pos/sales/${saleId}`);
 }
 
-/** Cancela una venta y revierte sus membresías (regla de reembolso en la BD). */
-export async function cancelSale(id: string, reason: string) {
+/**
+ * Cancela una venta y revierte sus membresías (regla de reembolso en la BD).
+ *
+ * Devuelve el error en vez de lanzarlo: Next.js redacta los mensajes de las
+ * Server Actions que lanzan cuando corre en producción, y aquí el mensaje —
+ * «Abre tu turno de caja…», «Sólo un administrador puede…» — es justo lo que
+ * el cajero necesita leer.
+ */
+export async function cancelSale(
+  id: string,
+  reason: string,
+): Promise<SaleFormState> {
   const supabase = await createSupabaseClient();
-  const { error } = await supabase.rpc("cancel_sale", {
+  const args: RpcArgsNullable<"cancel_sale", "p_reason"> = {
     p_sale: id,
     p_reason: reason || null,
-  });
+  };
+  const { error } = await supabase.rpc(
+    "cancel_sale",
+    args as RpcArgs<"cancel_sale">,
+  );
   if (error) {
-    throw new Error(businessMessage(error.message));
+    return { error: businessMessage(error.message) };
   }
   revalidatePath("/pos/sales");
   revalidatePath(`/pos/sales/${id}`);
   revalidatePath("/clients");
+  revalidatePath("/cash");
+  return { error: null };
 }
 
 /**
