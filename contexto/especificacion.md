@@ -68,8 +68,8 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - [x] Membresías editables (Mensual, Parejas, Estudiantes, Quincenal, Semanal, Visita)
 - [x] POS / Venta de membresías con **devoluciones, cancelaciones y reembolsos** (omitido en el prompt original)
 - [x] Caja: apertura/cierre de turno con fondo inicial y arqueo (control de diferencias)
-- [ ] Cortes diario / semanal / mensual + gráficas financieras
-- [ ] Export Excel / CSV
+- [x] Cortes diario / semanal / mensual + gráficas financieras
+- [x] Export Excel / CSV
 
 ### Fase 2 — Cliente y cobranza (MVP-B)
 - [ ] Portal del cliente (login separado del staff, rate-limiting, anti-fuerza bruta)
@@ -123,6 +123,13 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - [ ] Periodo de gracia de acceso para membresías vencidas *(se decidirá en el slice de Acceso, Fase 3)*
 - [ ] ¿Hay datos existentes (clientes/inventario) que migrar?
 - [ ] Modo offline/contingencia del POS si se cae internet *(post-MVP; el POS del MVP requiere conexión)*
+
+### Decisiones de Cortes y export (resueltas 2026-08-05)
+
+- **Agregación en la base, no en la app:** los cortes salen de funciones SQL (`sales_summary`, `sales_by_day`, `sales_by_plan`, `sales_by_cashier`, `sales_by_hour`, `sales_detail`), todas `SECURITY INVOKER` para que sumen bajo RLS. Traer un mes de ventas a Node para sumarlas no escala y expone de más. Cuando el volumen lo pida, estas mismas firmas pueden respaldarse con vistas materializadas (§6) sin tocar la app.
+- **Zona horaria:** un corte «del día» es local del gimnasio, no del servidor. Los rangos se calculan con `org_branding.timezone` y se agrupa por día/hora en esa zona. Con el servidor en UTC, un corte diario calculado con la fecha del servidor sale vacío después de las 18:00 hora de CDMX.
+- **Ingresos vs. neto:** «Ingresos» cuenta sólo ventas **completadas** del periodo. El **neto** parte del bruto (incluidas las canceladas) y le resta los reembolsos **pagados** en el periodo, igual que el arqueo: si se restaran de los ingresos, una venta cancelada penalizaría dos veces, y un reembolso de una venta de otro mes nunca aparecería en el corte donde salió el dinero.
+- **Export:** CSV (con BOM UTF-8, o Excel rompe los acentos) y XLSX vía `exceljs`, ambos saneados contra **inyección de fórmulas** (§5.5): toda celda que empiece con `=`, `+`, `-`, `@` o tabulación se antepone con apóstrofo. El vector es real: el nombre de un cliente entra por un formulario del gimnasio y se ejecuta en la máquina de quien abra el reporte.
 
 ### Decisiones de Caja (resueltas 2026-08-05)
 

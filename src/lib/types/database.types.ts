@@ -988,6 +988,78 @@ export type Database = {
         }
         Returns: string
       }
+      sales_by_cashier: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          cashier_id: string
+          cashier_name: string
+          sales_count: number
+          total: number
+        }[]
+      }
+      sales_by_day: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          day: string
+          sales_count: number
+          total: number
+        }[]
+      }
+      sales_by_hour: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          hour: number
+          sales_count: number
+          total: number
+        }[]
+      }
+      sales_by_plan: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          plan_name: string
+          quantity: number
+          total: number
+        }[]
+      }
+      sales_detail: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          branch_name: string
+          cashier_name: string
+          client_name: string
+          discount_amount: number
+          folio: number
+          items: string
+          member_number: number
+          payment_method: string
+          sold_at: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          total: number
+        }[]
+      }
+      sales_summary: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          avg_ticket: number
+          card_total: number
+          cash_in: number
+          cash_out: number
+          cash_total: number
+          discount_amount: number
+          gross_total: number
+          net_revenue: number
+          new_clients: number
+          refunds_count: number
+          refunds_total: number
+          sales_count: number
+          subtotal: number
+          tax_amount: number
+          total: number
+          transfer_total: number
+        }[]
+      }
       shares_org_with: { Args: { target_user: string }; Returns: boolean }
       storage_object_org: { Args: { object_name: string }; Returns: string }
     }
@@ -1127,7 +1199,6 @@ export const Constants = {
     },
   },
 } as const
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Alias de conveniencia (escritos a mano; re-pegar tras `npm run db:types`).
