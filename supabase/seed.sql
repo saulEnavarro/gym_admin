@@ -152,3 +152,16 @@ insert into public.membership_plans
 values
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Mensual Premium', 'Acceso total 30 días', 600, 30, 1, 1),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Día',             'Pase de un día',        80,  1, 1, 2);
+
+-- ── Fase 2 · Rebanada C · Recordatorios ──────────────────────────────────────
+-- Runtime del worker (LOCAL). Producción sustituye esta fila fuera de banda.
+-- El invoke_secret DEBE coincidir con REMINDER_INVOKE_SECRET del function .env.
+insert into private.reminder_runtime (function_url, invoke_secret)
+values (
+  'http://host.docker.internal:54321/functions/v1/process-reminders',
+  'local-dev-reminder-secret'
+);
+
+-- NB: no se siembran membresías aquí a propósito (los tests de RLS cuentan
+-- client_memberships). Para probar recordatorios, crea una membresía por vencer
+-- desde el POS o vía un INSERT puntual y llama a enqueue_due_reminders().

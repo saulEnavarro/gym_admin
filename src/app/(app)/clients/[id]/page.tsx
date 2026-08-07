@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { ToggleActiveButton } from "@/components/clients/toggle-active-button";
 import { InvitePortalButton } from "@/components/clients/invite-portal-button";
+import { RemindersOptOutToggle } from "@/components/clients/reminders-opt-out-toggle";
 import { getSignedUrl, CLIENT_PHOTOS_BUCKET } from "@/lib/storage";
 import {
   ageFromBirthDate,
@@ -279,6 +280,24 @@ export default async function ClientDetailPage({
                   : ""
               }.`
             : "Invita al cliente para que consulte su membresía, días restantes, QR e historial desde su propia cuenta."}
+        </CardContent>
+      </Card>
+
+      {/* Recordatorios por correo */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Mail className="h-4 w-4" />
+            Recordatorios por correo
+          </CardTitle>
+          <RemindersOptOutToggle id={c.id} optOut={c.reminders_opt_out} />
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          {c.reminders_opt_out
+            ? "Este cliente NO recibirá recordatorios de vencimiento."
+            : c.email
+              ? "Recibirá avisos de vencimiento en su correo cuando corresponda."
+              : "Sin correo en la ficha: no se le pueden enviar recordatorios."}
         </CardContent>
       </Card>
 

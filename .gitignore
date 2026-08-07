@@ -37,6 +37,8 @@ yarn-error.log*
 /supabase/.branches
 /supabase/.temp
 /supabase/.env
+# Secretos locales de las Edge Functions (SMTP, secreto de invocación).
+/supabase/functions/.env
 
 # claude
 .claude/settings.local.json

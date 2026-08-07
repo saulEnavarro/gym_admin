@@ -383,6 +383,7 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           portal_invited_at: string | null
+          reminders_opt_out: boolean
           sex: string | null
           updated_at: string
           user_id: string | null
@@ -410,6 +411,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           portal_invited_at?: string | null
+          reminders_opt_out?: boolean
           sex?: string | null
           updated_at?: string
           user_id?: string | null
@@ -437,6 +439,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           portal_invited_at?: string | null
+          reminders_opt_out?: boolean
           sex?: string | null
           updated_at?: string
           user_id?: string | null
@@ -674,6 +677,44 @@ export type Database = {
           },
         ]
       }
+      org_reminder_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          from_name: string | null
+          offsets_enabled: string[]
+          org_id: string
+          reply_to: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          from_name?: string | null
+          offsets_enabled?: string[]
+          org_id: string
+          reply_to?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          from_name?: string | null
+          offsets_enabled?: string[]
+          org_id?: string
+          reply_to?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_reminder_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -754,6 +795,76 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reminder_outbox: {
+        Row: {
+          attempts: number
+          client_id: string
+          client_membership_id: string
+          created_at: string
+          due_on: string
+          email: string
+          id: string
+          last_error: string | null
+          offset_key: string
+          org_id: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          client_id: string
+          client_membership_id: string
+          created_at?: string
+          due_on: string
+          email: string
+          id?: string
+          last_error?: string | null
+          offset_key: string
+          org_id: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          client_id?: string
+          client_membership_id?: string
+          created_at?: string
+          due_on?: string
+          email?: string
+          id?: string
+          last_error?: string | null
+          offset_key?: string
+          org_id?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_outbox_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminder_outbox_client_membership_id_fkey"
+            columns: ["client_membership_id"]
+            isOneToOne: false
+            referencedRelation: "client_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminder_outbox_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sale_items: {
         Row: {
@@ -992,6 +1103,7 @@ export type Database = {
       current_client_org: { Args: never; Returns: string }
       current_user_branch_ids: { Args: never; Returns: string[] }
       current_user_org_ids: { Args: never; Returns: string[] }
+      enqueue_due_reminders: { Args: { p_today?: string }; Returns: number }
       has_role_in_org: {
         Args: {
           roles: Database["public"]["Enums"]["app_role"][]
@@ -1323,6 +1435,20 @@ export type CashMovement = Omit<
 };
 export type CashSessionTotals =
   Database["public"]["Views"]["cash_session_totals"]["Row"];
+
+// Recordatorios (Fase 2 · Rebanada C).
+export type ReminderOffsetKey =
+  | "minus_7"
+  | "minus_3"
+  | "day_0"
+  | "plus_7"
+  | "plus_30";
+export type ReminderStatus = "pending" | "sent" | "failed" | "skipped";
+export type OrgReminderSettings = Row<"org_reminder_settings">;
+export type ReminderOutbox = Omit<
+  Row<"reminder_outbox">,
+  "offset_key" | "status"
+> & { offset_key: ReminderOffsetKey; status: ReminderStatus };
 
 /**
  * Argumentos de una función RPC. Postgres SÍ acepta NULL en los argumentos,

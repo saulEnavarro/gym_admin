@@ -37,6 +37,8 @@ api_url = "http://127.0.0.1"
 [inbucket]
 enabled = true
 port = 54324
+# Puerto SMTP de Mailpit: la Edge Function process-reminders envía aquí en local.
+smtp_port = 54325
 
 [storage]
 enabled = true
@@ -70,3 +72,15 @@ enable_confirmations = false
 email_sent = 10
 sign_in_sign_ups = 30
 token_refresh = 150
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Edge Functions (Fase 2 · Rebanada C: worker de recordatorios).
+# ─────────────────────────────────────────────────────────────────────────────
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+
+# process-reminders se protege con la cabecera x-reminder-secret (no JWT), así que
+# pg_cron/pg_net puede invocarla sin un token de usuario.
+[functions.process-reminders]
+verify_jwt = false

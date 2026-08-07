@@ -75,7 +75,7 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - [x] Portal del cliente (login separado del staff, rate-limiting, anti-fuerza bruta) — *Rebanada A*
 - [x] Vista de cliente: estado de membresía, días restantes, QR personal, historial, pagos (historial de solo lectura) — *Rebanada A*
 - [ ] Pagos / renovación en línea con **Mercado Pago** (webhooks, tokenizado) — *Rebanada B (pendiente credenciales)*
-- [ ] Recordatorios por correo en cola de jobs: 7 días, 3 días, mismo día, +7 días, +30 días (configurable, con opt-out)
+- [x] Recordatorios por correo en cola de jobs: 7 días, 3 días, mismo día, +7 días, +30 días (configurable, con opt-out) — *Rebanada C*
 
 ### Fase 3 — Acceso y ocupación (MVP-C)
 - [ ] Check-in por QR + registro manual en recepción

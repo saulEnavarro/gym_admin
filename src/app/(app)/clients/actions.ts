@@ -275,3 +275,14 @@ export async function toggleClientActive(id: string, active: boolean) {
   revalidatePath("/clients");
   revalidatePath(`/clients/${id}`);
 }
+
+/** Activa o desactiva los recordatorios por correo de un cliente (opt-out). */
+export async function toggleClientReminders(id: string, optOut: boolean) {
+  const supabase = await createSupabaseClient();
+  const { error } = await supabase
+    .from("clients")
+    .update({ reminders_opt_out: optOut })
+    .eq("id", id);
+  if (error) throw new Error("No se pudo actualizar la preferencia de correos.");
+  revalidatePath(`/clients/${id}`);
+}
