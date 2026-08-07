@@ -48,7 +48,7 @@ file_size_limit = "50MiB"
 enabled = true
 # URL del sitio para callbacks y links en correos.
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000"]
+additional_redirect_urls = ["http://localhost:3000", "http://localhost:3000/portal/set-password", "http://localhost:3000/portal/login"]
 jwt_expiry = 3600
 # Rotación real de refresh tokens con revocación (barandilla #6).
 enable_refresh_token_rotation = true

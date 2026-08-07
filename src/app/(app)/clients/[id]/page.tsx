@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ToggleActiveButton } from "@/components/clients/toggle-active-button";
+import { InvitePortalButton } from "@/components/clients/invite-portal-button";
 import { getSignedUrl, CLIENT_PHOTOS_BUCKET } from "@/lib/storage";
 import {
   ageFromBirthDate,
@@ -252,6 +253,32 @@ export default async function ClientDetailPage({
               {c.guardian_name ? ` (${c.guardian_name})` : ""}: registrado.
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Portal del cliente */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Mail className="h-4 w-4" />
+            Portal del cliente
+          </CardTitle>
+          <InvitePortalButton
+            clientId={c.id}
+            linked={Boolean(c.user_id)}
+            hasEmail={Boolean(c.email)}
+          />
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          {c.user_id
+            ? `El cliente puede iniciar sesión en el portal${
+                c.portal_invited_at
+                  ? ` (invitado el ${new Date(
+                      c.portal_invited_at,
+                    ).toLocaleDateString("es-MX")})`
+                  : ""
+              }.`
+            : "Invita al cliente para que consulte su membresía, días restantes, QR e historial desde su propia cuenta."}
         </CardContent>
       </Card>
 

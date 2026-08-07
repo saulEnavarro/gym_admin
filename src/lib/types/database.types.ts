@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tipos de la base de datos.
  *
  * ⚠️ GENERADO desde el esquema SQL. No edites la sección generada a mano:
@@ -382,8 +382,10 @@ export type Database = {
           org_id: string
           phone: string | null
           photo_url: string | null
+          portal_invited_at: string | null
           sex: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           address?: string | null
@@ -407,8 +409,10 @@ export type Database = {
           org_id: string
           phone?: string | null
           photo_url?: string | null
+          portal_invited_at?: string | null
           sex?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           address?: string | null
@@ -432,8 +436,10 @@ export type Database = {
           org_id?: string
           phone?: string | null
           photo_url?: string | null
+          portal_invited_at?: string | null
           sex?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -692,6 +698,30 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      portal_login_attempts: {
+        Row: {
+          attempted_at: string
+          email: string
+          id: number
+          ip: string | null
+          ok: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          email: string
+          id?: never
+          ip?: string | null
+          ok?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          email?: string
+          id?: never
+          ip?: string | null
+          ok?: boolean
         }
         Relationships: []
       }
@@ -958,6 +988,8 @@ export type Database = {
         Returns: string
       }
       current_cash_session: { Args: never; Returns: string }
+      current_client_id: { Args: never; Returns: string }
+      current_client_org: { Args: never; Returns: string }
       current_user_branch_ids: { Args: never; Returns: string[] }
       current_user_org_ids: { Args: never; Returns: string[] }
       has_role_in_org: {
@@ -965,6 +997,10 @@ export type Database = {
           roles: Database["public"]["Enums"]["app_role"][]
           target_org: string
         }
+        Returns: boolean
+      }
+      is_login_locked: {
+        Args: { p_email: string; p_ip: string }
         Returns: boolean
       }
       is_org_admin: { Args: { target_org: string }; Returns: boolean }
@@ -987,6 +1023,10 @@ export type Database = {
           p_payment_method: string
         }
         Returns: string
+      }
+      register_login_attempt: {
+        Args: { p_email: string; p_ip: string; p_ok: boolean }
+        Returns: undefined
       }
       sales_by_cashier: {
         Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
@@ -1297,3 +1337,4 @@ export type RpcArgsNullable<
   T extends keyof Database["public"]["Functions"],
   K extends keyof RpcArgs<T>,
 > = Omit<RpcArgs<T>, K> & { [P in K]: RpcArgs<T>[P] | null };
+
