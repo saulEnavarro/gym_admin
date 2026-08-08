@@ -75,7 +75,7 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - [x] Portal del cliente (login separado del staff, rate-limiting, anti-fuerza bruta) — *Rebanada A*
 - [x] Vista de cliente: estado de membresía, días restantes, QR personal, historial, pagos (historial de solo lectura) — *Rebanada A*
 - [ ] Pagos / renovación en línea con **Mercado Pago** (webhooks, tokenizado) — *Rebanada B (pendiente credenciales)*
-- [x] Recordatorios por correo en cola de jobs: 7 días, 3 días, mismo día, +7 días, +30 días (configurable, con opt-out) — *Rebanada C*
+- [x] Recordatorios por correo en cola de jobs (configurable, con opt-out) — *Rebanada C*. **Por omisión sólo se envía un aviso: 7 días antes.** Los otros momentos (−3, día 0, +7, +30) existen y se encienden desde /settings/reminders.
 
 ### Fase 3 — Acceso y ocupación (MVP-C)
 - [ ] Check-in por QR + registro manual en recepción
@@ -131,6 +131,11 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - **Los días del asunto se cuentan al ENVIAR, no al encolar.** Con ventana de recuperación, un texto fijo de «vence en 7 días» mentiría si el envío sale con retraso. El `offset_key` sólo elige el tono; el número sale de `end_date` contra el día del envío.
 - **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
 - **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
+
+### Alcance de los recordatorios (resuelto 2026-08-08)
+
+- **Un solo aviso por membresía: 7 días antes.** Es lo que el negocio necesita; más correos por la misma membresía cansan al cliente y suben el riesgo de que marque el remitente como spam. Los otros cuatro momentos siguen implementados y se encienden por organización desde `/settings/reminders`, pero no vienen activos: un gimnasio que no toque nada manda un correo por membresía y nada más.
+- **Sin reintentos de envío** (`max_attempts` = 1): un fallo de SMTP manda el aviso a `failed`, visible en la cola para revisarlo a mano. La maquinaria de reintentos de 0018 se conserva —es un número por fila— para reactivarla subiendo `max_attempts`, sin migrar nada.
 
 ### Decisiones de Cortes y export (resueltas 2026-08-05)
 

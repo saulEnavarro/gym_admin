@@ -12,6 +12,7 @@ export const REMINDER_OFFSET_LABELS: Record<ReminderOffsetKey, string> = {
   plus_30: "30 días después",
 };
 
+/** Todos los momentos que existen, en orden cronológico (para la UI). */
 export const ALL_REMINDER_OFFSETS: ReminderOffsetKey[] = [
   "minus_7",
   "minus_3",
@@ -19,6 +20,14 @@ export const ALL_REMINDER_OFFSETS: ReminderOffsetKey[] = [
   "plus_7",
   "plus_30",
 ];
+
+/**
+ * Momentos activos cuando la organización no ha tocado la configuración: un
+ * solo aviso, siete días antes. Debe coincidir con el default de
+ * `org_reminder_settings.offsets_enabled` (migración 0019); si no, la UI
+ * mostraría casillas que no reflejan lo que hace el encolado.
+ */
+export const DEFAULT_REMINDER_OFFSETS: ReminderOffsetKey[] = ["minus_7"];
 
 /**
  * Etiqueta en español del estado de un aviso en la cola.

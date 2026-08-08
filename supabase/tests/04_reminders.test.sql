@@ -6,7 +6,7 @@
 -- ║ (on/off global y por momento). Se ejecuta con `supabase test db`.          ║
 -- ╚══════════════════════════════════════════════════════════════════════════╝
 begin;
-select plan(21);
+select plan(24);
 
 set local role postgres;
 
@@ -25,6 +25,14 @@ select org_id, id, 'Mensual', date '2026-08-02', date '2026-09-01', 'active'
 insert into public.client_memberships (org_id, client_id, plan_name, start_date, end_date, status)
 select org_id, id, 'Mensual', date '2026-08-02', date '2026-09-01', 'cancelled'
   from public.clients where email = 'carlos.mendez@example.test';
+
+-- ── Política por omisión: un solo aviso, 7 días antes ────────────────────────
+-- Sin fila en org_reminder_settings sólo se encola minus_7 (migración 0019).
+select is(
+  public.enqueue_due_reminders(date '2026-09-01', 0),  -- day_0 de Juan
+  0,
+  'Sin configuración, un momento distinto de minus_7 NO se encola'
+);
 
 -- ── −7 días (hoy = end_date − 7 = 2026-08-25) ────────────────────────────────
 select is(
@@ -151,10 +159,35 @@ select is(
   'Con una vigencia apilada por delante, la anterior no avisa vencimiento'
 );
 
--- ── Reintentos con retroceso exponencial ─────────────────────────────────────
--- Se toma un aviso pendiente cualquiera para simular fallos de envío.
-create temporary table t_reminder as
+-- ── Sin reintentos (política vigente: max_attempts = 1) ──────────────────────
+create temporary table t_sin_reintento as
   select id from public.reminder_outbox where status = 'pending' limit 1;
+
+select is(
+  (select ro.max_attempts from public.reminder_outbox ro
+    where ro.id = (select id from t_sin_reintento)),
+  1,
+  'Los avisos nuevos nacen con un solo intento'
+);
+
+select public.mark_reminder_failed((select id from t_sin_reintento), 'SMTP caído');
+
+select is(
+  (select ro.status from public.reminder_outbox ro
+    where ro.id = (select id from t_sin_reintento)),
+  'failed',
+  'Sin reintentos: el primer fallo descarta el aviso'
+);
+
+-- ── La maquinaria de reintentos sigue disponible (subiendo max_attempts) ─────
+-- Se conserva probada para poder reactivarla sin migrar nada.
+create temporary table t_reminder as
+  select id from public.reminder_outbox
+   where status = 'pending' and id <> (select id from t_sin_reintento)
+   limit 1;
+
+update public.reminder_outbox set max_attempts = 5
+ where id = (select id from t_reminder);
 
 select public.mark_reminder_failed((select id from t_reminder), 'SMTP caído');
 

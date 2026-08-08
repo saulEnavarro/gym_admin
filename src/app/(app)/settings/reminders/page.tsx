@@ -8,7 +8,7 @@ import {
   REMINDER_OFFSET_LABELS,
   REMINDER_STATUS_LABELS,
   retryLabel,
-  ALL_REMINDER_OFFSETS,
+  DEFAULT_REMINDER_OFFSETS,
 } from "@/lib/reminders/helpers";
 import { cn } from "@/lib/utils";
 import type {
@@ -43,10 +43,10 @@ export default async function RemindersSettingsPage() {
   ]);
 
   const s = settings as OrgReminderSettings | null;
-  // Sin fila = todo habilitado (misma regla que enqueue_due_reminders).
+  // Sin fila = sólo el aviso de 7 días antes (misma regla que enqueue_due_reminders).
   const enabled = s?.enabled ?? true;
   const offsetsEnabled = (s?.offsets_enabled ??
-    ALL_REMINDER_OFFSETS) as ReminderOffsetKey[];
+    DEFAULT_REMINDER_OFFSETS) as ReminderOffsetKey[];
 
   const rows = (outbox ?? []) as (Pick<
     ReminderOutbox,
