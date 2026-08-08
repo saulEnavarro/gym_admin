@@ -134,16 +134,17 @@ set local role postgres;
 insert into public.portal_login_attempts (email, ip, ok)
 select 'bruto@example.test', '10.0.0.9', false from generate_series(1, 5);
 
-select is(
-  public.is_login_locked('bruto@example.test', '10.0.0.9'),
-  true,
-  '5 intentos fallidos en 15 min → login bloqueado'
+-- El detalle del retraso progresivo vive en 05_portal_login_throttle; aquí sólo
+-- se comprueba que la barandilla está puesta en la superficie del portal.
+select ok(
+  public.login_retry_delay('bruto@example.test', '10.0.0.9') > 0,
+  '5 intentos fallidos imponen una espera antes del siguiente intento'
 );
 
 select is(
-  public.is_login_locked('nuevo@example.test', '10.0.0.1'),
-  false,
-  'Un email/ip sin intentos fallidos NO está bloqueado'
+  public.login_retry_delay('nuevo@example.test', '10.0.0.1'),
+  0,
+  'Un email/ip sin intentos fallidos no espera nada'
 );
 
 select * from finish();

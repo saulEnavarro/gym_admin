@@ -15,12 +15,28 @@ const loginSchema = z.object({
 
 export type PortalLoginState = { error: string | null };
 
-/** IP del cliente a partir de las cabeceras del proxy (mejor esfuerzo). */
+/**
+ * IP del cliente a partir de las cabeceras del proxy (mejor esfuerzo).
+ *
+ * ⚠️ `x-forwarded-for` sólo es de fiar detrás de un proxy que la FIJE (Vercel
+ * lo hace). Si algún día esto se despliega sin un proxy de confianza al frente,
+ * la cabecera es falsificable y el contador por IP se evade rotándola; ahí
+ * habría que tomar la IP del socket en su lugar.
+ */
 async function clientIp(): Promise<string | null> {
   const h = await headers();
   const fwd = h.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0]?.trim() ?? null;
   return h.get("x-real-ip");
+}
+
+/** «5 segundos», «2 minutos» — para decirle al cliente cuánto falta exactamente. */
+function formatWait(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds} segundo${seconds === 1 ? "" : "s"}`;
+  }
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} minuto${minutes === 1 ? "" : "s"}`;
 }
 
 /**
@@ -46,19 +62,23 @@ export async function portalLogin(
   const ip = await clientIp();
   const admin = createAdminClient();
 
-  // Bloqueo por exceso de intentos fallidos (email o IP).
-  const lockedArgs: RpcArgsNullable<"is_login_locked", "p_ip"> = {
+  // Espera pendiente por intentos fallidos. No es un portazo: es un retraso que
+  // crece con los fallos de ESTA cuenta y se borra al entrar bien. Por IP sólo
+  // frena cuando hay fallos contra muchas cuentas distintas (password-spray),
+  // para que los socios que comparten el WiFi del gimnasio no se estorben.
+  const delayArgs: RpcArgsNullable<"login_retry_delay", "p_ip"> = {
     p_email: email,
     p_ip: ip,
   };
-  const { data: locked } = await admin.rpc(
-    "is_login_locked",
-    lockedArgs as RpcArgs<"is_login_locked">,
+  const { data: wait } = await admin.rpc(
+    "login_retry_delay",
+    delayArgs as RpcArgs<"login_retry_delay">,
   );
-  if (locked) {
+  if (typeof wait === "number" && wait > 0) {
     return {
-      error:
-        "Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo.",
+      error: `Demasiados intentos fallidos. Espera ${formatWait(
+        wait,
+      )} e inténtalo de nuevo.`,
     };
   }
 

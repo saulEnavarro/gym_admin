@@ -1120,12 +1120,12 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_login_locked: {
-        Args: { p_email: string; p_ip: string }
-        Returns: boolean
-      }
       is_org_admin: { Args: { target_org: string }; Returns: boolean }
       is_org_member: { Args: { target_org: string }; Returns: boolean }
+      login_retry_delay: {
+        Args: { p_email: string; p_ip: string }
+        Returns: number
+      }
       mark_reminder_failed: {
         Args: { p_error: string; p_id: string }
         Returns: undefined
@@ -1140,6 +1140,7 @@ export type Database = {
         Args: { p_branch: string; p_notes: string; p_opening_float: number }
         Returns: string
       }
+      purge_login_attempts: { Args: never; Returns: number }
       register_cash_movement: {
         Args: {
           p_amount: number

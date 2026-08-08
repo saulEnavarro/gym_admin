@@ -132,6 +132,15 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
 - **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
 
+### Anti-fuerza bruta del portal (resuelto 2026-08-08)
+
+Barandilla #4, segunda versión. La primera contaba «fallos del correo **o** de la IP» contra un único umbral de 5, y eso mezclaba dos preguntas distintas: *¿atacan esta cuenta?* y *¿rocían contraseñas desde esta red?*. Con un solo contador, los socios que entran desde el WiFi del gimnasio se bloqueaban entre sí.
+
+- **Por correo: retraso progresivo, no portazo.** Cuatro intentos libres; a partir del cuarto fallo la espera crece (5 s, 15 s, 45 s, 2 min) y se borra al entrar bien. Nadie queda fuera del todo —que era la molestia real—, pero para un atacante el costo sigue creciendo. Un intento rechazado por la espera no cuenta como fallo: si contara, quien insiste alargaría su castigo sin llegar a probar.
+- **Por IP: se cuentan cuentas distintas, no intentos.** Un gimnasio lleno produce muchos fallos repartidos entre pocas personas que se equivocan con *su* correo; un ataque produce fallos contra *muchos* correos. El freno salta a las 10 cuentas distintas fallidas en 15 minutos desde la misma IP — un umbral que el mostrador no alcanza ni en día pico.
+- **El acierto limpia sólo el contador del correo, nunca el de la IP:** si limpiara el de la red, a un atacante le bastaría entrar a su propia cuenta para reiniciarlo y seguir rociando.
+- **Pendiente si se cambia de hosting:** `x-forwarded-for` sólo es de fiar detrás de un proxy que la fije (Vercel lo hace). Sin proxy de confianza al frente, la cabecera es falsificable y el contador por IP se evade rotándola.
+
 ### Alcance de los recordatorios (resuelto 2026-08-08)
 
 - **Un solo aviso por membresía: 7 días antes.** Es lo que el negocio necesita; más correos por la misma membresía cansan al cliente y suben el riesgo de que marque el remitente como spam. Los otros cuatro momentos siguen implementados y se encienden por organización desde `/settings/reminders`, pero no vienen activos: un gimnasio que no toque nada manda un correo por membresía y nada más.
