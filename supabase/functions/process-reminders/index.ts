@@ -33,6 +33,8 @@ Deno.serve(async (req) => {
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // Pendientes cuyo momento ya llegó y que además están listas para intentarse
+  // (next_attempt_at gobierna el retroceso de los reintentos, migración 0018).
   const { data: rows, error } = await supabase
     .from("reminder_outbox")
     .select(
@@ -43,6 +45,7 @@ Deno.serve(async (req) => {
     )
     .eq("status", "pending")
     .lte("due_on", today)
+    .lte("next_attempt_at", new Date().toISOString())
     .order("due_on", { ascending: true })
     .limit(BATCH);
 
@@ -77,6 +80,7 @@ Deno.serve(async (req) => {
         planName: membership?.plan_name ?? "tu membresía",
         endDate: membership?.end_date ?? r.due_on,
         orgName,
+        sentOn: today, // los días del asunto se cuentan al ENVIAR, no al encolar
       });
 
       await sendMail({
@@ -88,20 +92,15 @@ Deno.serve(async (req) => {
         html: mail.html,
       });
 
-      await supabase
-        .from("reminder_outbox")
-        .update({ status: "sent", sent_at: new Date().toISOString(), attempts: 1 })
-        .eq("id", r.id);
+      // Las transiciones viven en la base: la política de reintentos es una
+      // sola y no depende de quién drene la cola.
+      await supabase.rpc("mark_reminder_sent", { p_id: r.id });
       sent++;
     } catch (e) {
-      await supabase
-        .from("reminder_outbox")
-        .update({
-          status: "failed",
-          last_error: String(e instanceof Error ? e.message : e).slice(0, 500),
-          attempts: 1,
-        })
-        .eq("id", r.id);
+      await supabase.rpc("mark_reminder_failed", {
+        p_id: r.id,
+        p_error: String(e instanceof Error ? e.message : e),
+      });
       failed++;
     }
   }

@@ -20,10 +20,34 @@ export const ALL_REMINDER_OFFSETS: ReminderOffsetKey[] = [
   "plus_30",
 ];
 
-/** Etiqueta en español del estado de un aviso en la cola. */
+/**
+ * Etiqueta en español del estado de un aviso en la cola.
+ *
+ * Desde la migración 0018 un fallo de envío NO deja la fila en `failed`: se
+ * reprograma y sigue `pending`. `failed` significa que se agotaron los
+ * intentos, de ahí «Descartado» — es un buzón para revisar a mano, no un
+ * tropiezo pasajero.
+ */
 export const REMINDER_STATUS_LABELS: Record<ReminderStatus, string> = {
   pending: "Pendiente",
   sent: "Enviado",
-  failed: "Falló",
+  failed: "Descartado",
   skipped: "Omitido",
 };
+
+/** Resume los reintentos de una fila para la tabla de la cola. */
+export function retryLabel(
+  attempts: number,
+  nextAttemptAt: string | null,
+  status: ReminderStatus,
+  locale = "es-MX",
+): string {
+  if (attempts === 0) return "—";
+  if (status !== "pending") return `${attempts}`;
+  const when = nextAttemptAt ? new Date(nextAttemptAt) : null;
+  if (!when || when.getTime() <= Date.now()) return `${attempts} · en cola`;
+  return `${attempts} · reintenta ${when.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
+}

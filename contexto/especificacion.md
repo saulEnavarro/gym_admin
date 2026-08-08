@@ -124,6 +124,14 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - [ ] ¿Hay datos existentes (clientes/inventario) que migrar?
 - [ ] Modo offline/contingencia del POS si se cae internet *(post-MVP; el POS del MVP requiere conexión)*
 
+### Semántica de la cola de recordatorios (resuelta 2026-08-08)
+
+- **Sólo avisa la última membresía del cliente.** El encolado mira la membresía con el vencimiento más lejano entre las no canceladas; las anteriores callan. Sin esta regla, quien renovaba recibía «tu membresía venció hace 7 días» de la vigencia anterior —el peor destinatario posible, el que sí pagó— y la renovación anticipada disparaba «vence en 7 días» estando ya cubierto.
+- **Ventana de recuperación (2 días) en vez de coincidencia exacta.** Un día que el agendado no corriera, esos avisos se perdían para siempre. La unicidad `(membresía, momento)` ya impedía duplicados, así que repasar días hacia atrás es seguro. Fuera de la ventana no se recupera: más vale callar que mandar un aviso rancio.
+- **Los días del asunto se cuentan al ENVIAR, no al encolar.** Con ventana de recuperación, un texto fijo de «vence en 7 días» mentiría si el envío sale con retraso. El `offset_key` sólo elige el tono; el número sale de `end_date` contra el día del envío.
+- **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
+- **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
+
 ### Decisiones de Cortes y export (resueltas 2026-08-05)
 
 - **Agregación en la base, no en la app:** los cortes salen de funciones SQL (`sales_summary`, `sales_by_day`, `sales_by_plan`, `sales_by_cashier`, `sales_by_hour`, `sales_detail`), todas `SECURITY INVOKER` para que sumen bajo RLS. Traer un mes de ventas a Node para sumarlas no escala y expone de más. Cuando el volumen lo pida, estas mismas firmas pueden respaldarse con vistas materializadas (§6) sin tocar la app.

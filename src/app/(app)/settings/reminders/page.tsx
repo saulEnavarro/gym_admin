@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   REMINDER_OFFSET_LABELS,
   REMINDER_STATUS_LABELS,
+  retryLabel,
   ALL_REMINDER_OFFSETS,
 } from "@/lib/reminders/helpers";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,9 @@ export default async function RemindersSettingsPage() {
     supabase
       .from("reminder_outbox")
       .select(
-        "id, offset_key, due_on, email, status, sent_at, clients(first_name,last_name)",
+        // Una sola cadena literal: si se parte con `+`, PostgREST pierde la
+        // inferencia de tipos de las columnas y devuelve GenericStringError.
+        "id, offset_key, due_on, email, status, sent_at, attempts, next_attempt_at, last_error, clients(first_name,last_name)",
       )
       .order("due_on", { ascending: false })
       .limit(50),
@@ -47,7 +50,15 @@ export default async function RemindersSettingsPage() {
 
   const rows = (outbox ?? []) as (Pick<
     ReminderOutbox,
-    "id" | "offset_key" | "due_on" | "email" | "status" | "sent_at"
+    | "id"
+    | "offset_key"
+    | "due_on"
+    | "email"
+    | "status"
+    | "sent_at"
+    | "attempts"
+    | "next_attempt_at"
+    | "last_error"
   > & { clients: { first_name: string; last_name: string } | null })[];
 
   return (
@@ -102,6 +113,7 @@ export default async function RemindersSettingsPage() {
                     <th className="px-4 py-2 font-medium">Momento</th>
                     <th className="px-4 py-2 font-medium">Fecha</th>
                     <th className="px-4 py-2 font-medium">Estado</th>
+                    <th className="px-4 py-2 font-medium">Intentos</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -138,6 +150,14 @@ export default async function RemindersSettingsPage() {
                         >
                           {REMINDER_STATUS_LABELS[r.status]}
                         </span>
+                      </td>
+                      {/* Un fallo ya no es terminal: se ve el intento en curso
+                          y, si se descartó, el motivo del último error. */}
+                      <td
+                        className="px-4 py-2 text-xs text-muted-foreground"
+                        title={r.last_error ?? undefined}
+                      >
+                        {retryLabel(r.attempts, r.next_attempt_at, r.status)}
                       </td>
                     </tr>
                   ))}

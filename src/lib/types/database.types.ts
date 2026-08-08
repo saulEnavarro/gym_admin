@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Tipos de la base de datos.
  *
  * ⚠️ GENERADO desde el esquema SQL. No edites la sección generada a mano:
@@ -806,6 +806,8 @@ export type Database = {
           email: string
           id: string
           last_error: string | null
+          max_attempts: number
+          next_attempt_at: string
           offset_key: string
           org_id: string
           sent_at: string | null
@@ -821,6 +823,8 @@ export type Database = {
           email: string
           id?: string
           last_error?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
           offset_key: string
           org_id: string
           sent_at?: string | null
@@ -836,6 +840,8 @@ export type Database = {
           email?: string
           id?: string
           last_error?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
           offset_key?: string
           org_id?: string
           sent_at?: string | null
@@ -1103,7 +1109,10 @@ export type Database = {
       current_client_org: { Args: never; Returns: string }
       current_user_branch_ids: { Args: never; Returns: string[] }
       current_user_org_ids: { Args: never; Returns: string[] }
-      enqueue_due_reminders: { Args: { p_today?: string }; Returns: number }
+      enqueue_due_reminders: {
+        Args: { p_lookback?: number; p_today?: string }
+        Returns: number
+      }
       has_role_in_org: {
         Args: {
           roles: Database["public"]["Enums"]["app_role"][]
@@ -1117,6 +1126,11 @@ export type Database = {
       }
       is_org_admin: { Args: { target_org: string }; Returns: boolean }
       is_org_member: { Args: { target_org: string }; Returns: boolean }
+      mark_reminder_failed: {
+        Args: { p_error: string; p_id: string }
+        Returns: undefined
+      }
+      mark_reminder_sent: { Args: { p_id: string }; Returns: undefined }
       next_counter: { Args: { p_name: string; p_org: string }; Returns: number }
       next_membership_start: {
         Args: { p_client: string; p_from: string }

@@ -1,3 +1,16 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        // El código ya usa el prefijo `_` para lo que se recibe por contrato y
+        // no se ocupa (p. ej. `_prev` y `_formData`, que exige la firma de
+        // useActionState). Aquí se le pide al linter que honre esa convención.
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ]
+  }
 }

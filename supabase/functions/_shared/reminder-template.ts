@@ -3,38 +3,38 @@
 
 export type OffsetKey = "minus_7" | "minus_3" | "day_0" | "plus_7" | "plus_30";
 
-type Copy = { headline: (n: number) => string; cta: string };
-
-const COPY: Record<OffsetKey, Copy> = {
-  minus_7: {
-    headline: () => "Tu membresía vence en 7 días",
-    cta: "Renueva a tiempo y no pierdas tu acceso.",
-  },
-  minus_3: {
-    headline: () => "Tu membresía vence en 3 días",
-    cta: "Pasa a renovar para seguir entrenando sin interrupciones.",
-  },
-  day_0: {
-    headline: () => "Tu membresía vence hoy",
-    cta: "Renueva hoy mismo para mantener tu acceso activo.",
-  },
-  plus_7: {
-    headline: () => "Tu membresía venció hace 7 días",
-    cta: "Aún estás a tiempo de reactivarla. ¡Te esperamos!",
-  },
-  plus_30: {
-    headline: () => "Tu membresía venció hace 30 días",
-    cta: "Vuelve cuando quieras: reactiva tu membresía en recepción.",
-  },
+/**
+ * El asunto se redacta con los días REALES que faltan (o pasaron) al momento de
+ * enviar, no con los del `offset_key`. La cola tiene una ventana de recuperación
+ * (migración 0018): si el envío sale con un día de retraso, un texto fijo de
+ * «vence en 7 días» mentiría. El `offset_key` sólo elige el tono de la llamada
+ * a la acción, que sí es estable.
+ */
+const CTA: Record<OffsetKey, string> = {
+  minus_7: "Renueva a tiempo y no pierdas tu acceso.",
+  minus_3: "Pasa a renovar para seguir entrenando sin interrupciones.",
+  day_0: "Renueva hoy mismo para mantener tu acceso activo.",
+  plus_7: "Aún estás a tiempo de reactivarla. ¡Te esperamos!",
+  plus_30: "Vuelve cuando quieras: reactiva tu membresía en recepción.",
 };
 
-const OFFSET_DAYS: Record<OffsetKey, number> = {
-  minus_7: -7,
-  minus_3: -3,
-  day_0: 0,
-  plus_7: 7,
-  plus_30: 30,
-};
+/** Días de calendario entre dos fechas ISO (b − a), sin que la hora estorbe. */
+function dayDiff(a: string, b: string): number {
+  const [ay, am, ad] = a.split("-").map(Number);
+  const [by, bm, bd] = b.split("-").map(Number);
+  const ms =
+    Date.UTC(by!, bm! - 1, bd!) - Date.UTC(ay!, am! - 1, ad!);
+  return Math.round(ms / 86_400_000);
+}
+
+export function headlineFor(endDate: string, sentOn: string): string {
+  const days = dayDiff(sentOn, endDate);
+  if (days > 1) return `Tu membresía vence en ${days} días`;
+  if (days === 1) return "Tu membresía vence mañana";
+  if (days === 0) return "Tu membresía vence hoy";
+  if (days === -1) return "Tu membresía venció ayer";
+  return `Tu membresía venció hace ${Math.abs(days)} días`;
+}
 
 export type ReminderInput = {
   offsetKey: OffsetKey;
@@ -42,6 +42,8 @@ export type ReminderInput = {
   planName: string;
   endDate: string; // ISO yyyy-mm-dd
   orgName: string;
+  /** Día del envío (ISO). Por defecto, hoy. */
+  sentOn?: string;
   locale?: string;
 };
 
@@ -50,8 +52,9 @@ export type RenderedEmail = { subject: string; text: string; html: string };
 export function renderReminder(input: ReminderInput): RenderedEmail {
   const { offsetKey, clientName, planName, endDate, orgName } = input;
   const locale = input.locale ?? "es-MX";
-  const copy = COPY[offsetKey];
-  const headline = copy.headline(Math.abs(OFFSET_DAYS[offsetKey]));
+  const sentOn = input.sentOn ?? new Date().toISOString().slice(0, 10);
+  const copy = { cta: CTA[offsetKey] };
+  const headline = headlineFor(endDate, sentOn);
 
   const venceFmt = new Date(endDate + "T00:00:00").toLocaleDateString(locale, {
     day: "numeric",
