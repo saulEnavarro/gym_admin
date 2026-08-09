@@ -2,9 +2,30 @@
 
 SaaS **multi-inquilino y multi-sucursal** para la administración integral de gimnasios (México · MXN + IVA).
 
-> Documento de alcance y decisiones: [`contexto/especificacion.md`](contexto/especificacion.md) — **fuente de verdad** del proyecto.
+## Documentación
 
-Estado actual: **Fase 0 — Cimientos** ✅
+| Documento | Para qué |
+|---|---|
+| [`contexto/especificacion.md`](contexto/especificacion.md) | Alcance, fases y **todas las decisiones** con su porqué — *fuente de verdad* |
+| [`contexto/pendientes.md`](contexto/pendientes.md) | Qué falta y qué tan urgente es (lo que bloquea el beta) |
+| [`docs/manual-de-uso.md`](docs/manual-de-uso.md) | Manual para el personal del gimnasio |
+| [`docs/despliegue.md`](docs/despliegue.md) | Cómo poner la plataforma en la nube, paso a paso |
+
+## Estado
+
+| Fase | Estado |
+|---|---|
+| 0 · Cimientos multi-inquilino | ✅ |
+| 1 · Núcleo operativo (clientes, membresías, POS, caja, cortes) | ✅ |
+| 2 · Cliente y cobranza | Portal ✅ · Recordatorios ✅ · **Mercado Pago pendiente** |
+| 3 · Acceso y ocupación | ✅ |
+| 4 · Inventario y catálogo | ✅ |
+
+**220 pruebas automáticas** de base de datos (`npm run db:test`).
+
+> ⚠️ **Todavía no es autoservicio.** Falta el alta de organización, sucursales,
+> equipo y personalización desde la interfaz: hoy se hacen por SQL. Ver
+> [pendientes](contexto/pendientes.md#1-bloquean-el-beta-en-producción).
 
 ---
 
