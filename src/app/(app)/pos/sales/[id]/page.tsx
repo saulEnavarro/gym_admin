@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CancelSaleButton } from "@/components/pos/cancel-sale-button";
+import { CancelItemButton } from "@/components/pos/cancel-item-button";
 import { formatCurrency, cn } from "@/lib/utils";
 import { IVA_RATE } from "@/lib/billing/iva";
 import { formatFolio, paymentLabel } from "@/lib/pos/helpers";
@@ -66,12 +67,18 @@ export default async function SaleTicketPage({
   const clientById = new Map(
     (clients ?? []).map((c) => [c.id, c as Pick<Client, "id" | "member_number" | "first_name" | "last_name">]),
   );
-  const buyer = clientById.get(s.client_id);
+  const buyer = s.client_id ? clientById.get(s.client_id) : null;
   const partner = s.partner_client_id
     ? clientById.get(s.partner_client_id)
     : null;
 
   const cancelled = s.status === "cancelled";
+  // Suma de lo devuelto por líneas canceladas: el ticket muestra cobrado,
+  // devuelto y neto sin tocar los montos originales.
+  const devuelto = ((items ?? []) as SaleItem[]).reduce(
+    (sum, it) => sum + Number(it.refunded_amount ?? 0),
+    0,
+  );
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -115,6 +122,11 @@ export default async function SaleTicketPage({
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               Cliente
             </p>
+            {!s.client_id && (
+              <p className="font-medium text-muted-foreground">
+                Público general
+              </p>
+            )}
             {buyer && (
               <Link
                 href={`/clients/${buyer.id}`}
@@ -139,17 +151,55 @@ export default async function SaleTicketPage({
             )}
           </div>
 
-          {/* Líneas */}
-          <div className="space-y-1">
+          {/* Líneas. Cada una se puede cancelar por separado: el ticket conserva
+              su folio y muestra lo cancelado aparte, sin reescribir montos. */}
+          <div className="space-y-2">
             {(items ?? []).map((it) => {
               const item = it as SaleItem;
+              const anulada = item.cancelled_at != null;
               return (
-                <div key={item.id} className="flex justify-between">
-                  <span>
+                <div
+                  key={item.id}
+                  className={cn(
+                    "flex flex-wrap items-center justify-between gap-2 rounded-md px-2 py-1.5",
+                    anulada && "bg-destructive/5",
+                  )}
+                >
+                  <span className={cn(anulada && "text-muted-foreground line-through")}>
                     {item.description}
                     {item.quantity > 1 ? ` × ${item.quantity}` : ""}
                   </span>
-                  <span className="font-medium">{money(item.line_total)}</span>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "font-medium",
+                        anulada && "text-muted-foreground line-through",
+                      )}
+                    >
+                      {money(item.line_total)}
+                    </span>
+                    {anulada ? (
+                      <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                        Cancelada
+                        {item.refunded_amount != null
+                          ? ` · ${money(item.refunded_amount)}`
+                          : ""}
+                      </span>
+                    ) : (
+                      !cancelled && (
+                        <CancelItemButton
+                          saleId={s.id}
+                          itemId={item.id}
+                          description={item.description}
+                        />
+                      )
+                    )}
+                  </span>
+                  {anulada && item.cancel_reason && (
+                    <span className="w-full text-xs text-muted-foreground">
+                      Motivo: {item.cancel_reason}
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -167,10 +217,22 @@ export default async function SaleTicketPage({
               {money(s.tax_amount)}
             </Row>
             <div className="border-t border-border pt-2">
-              <Row label="Total" strong>
+              <Row label="Total cobrado" strong>
                 {money(s.total)}
               </Row>
             </div>
+            {devuelto > 0 && (
+              <>
+                <Row label="Devuelto" muted>
+                  −{money(devuelto)}
+                </Row>
+                <div className="border-t border-border pt-2">
+                  <Row label="Neto del ticket" strong>
+                    {money(Math.max(0, s.total - devuelto))}
+                  </Row>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex justify-between border-t border-border pt-3 text-muted-foreground">

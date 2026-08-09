@@ -31,19 +31,19 @@ select lives_ok(
 
 -- Mensual, efectivo, sin descuento → 450 + 16% = 522.00
 select lives_ok(
-  $$ select public.create_membership_sale(
+  $$ select public.create_sale(
        (select id from clients where first_name = 'Juan' limit 1), null,
        (select id from membership_plans where name = 'Mensual' limit 1),
-       'cash', 'none', 0, null) $$,
+       null, 'cash', 'none', 0, null) $$,
   'Venta 1: Mensual en efectivo'
 );
 
 -- Semanal, tarjeta, 10% → base 150 − 15 = 135; IVA 21.60; total 156.60
 select lives_ok(
-  $$ select public.create_membership_sale(
+  $$ select public.create_sale(
        (select id from clients where first_name = 'Ana' limit 1), null,
        (select id from membership_plans where name = 'Semanal' limit 1),
-       'card', 'percent', 10, null) $$,
+       null, 'card', 'percent', 10, null) $$,
   'Venta 2: Semanal con tarjeta y 10% de descuento'
 );
 

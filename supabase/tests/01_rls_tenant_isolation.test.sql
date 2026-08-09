@@ -126,11 +126,11 @@ select throws_ok(
 
 -- Caja (Fase 1): sin turno abierto no se puede vender.
 select throws_ok(
-  $$ select public.create_membership_sale(
+  $$ select public.create_sale(
        (select id from clients where first_name = 'Juan' limit 1),
        null,
        (select id from membership_plans where name = 'Mensual' limit 1),
-       'cash', 'none', 0, null) $$,
+       null, 'cash', 'none', 0, null) $$,
   'P0001',
   NULL,
   'Sin turno de caja abierto NO se puede registrar una venta'
@@ -157,11 +157,11 @@ select throws_ok(
 
 -- POS (Fase 1): venta de membresía atómica + regla de apilado.
 select lives_ok(
-  $$ select public.create_membership_sale(
+  $$ select public.create_sale(
        (select id from clients where first_name = 'Juan' limit 1),
        null,
        (select id from membership_plans where name = 'Mensual' limit 1),
-       'cash', 'none', 0, null) $$,
+       null, 'cash', 'none', 0, null) $$,
   'Admin A registra una venta de membresía (Mensual, individual)'
 );
 
@@ -289,11 +289,11 @@ select throws_ok(
 
 -- El turno de Admin A no le sirve a Recepción: cada cajero abre el suyo.
 select throws_ok(
-  $$ select public.create_membership_sale(
+  $$ select public.create_sale(
        (select id from clients where first_name = 'Ana' limit 1),
        null,
        (select id from membership_plans where name = 'Semanal' limit 1),
-       'card', 'none', 0, null) $$,
+       null, 'card', 'none', 0, null) $$,
   'P0001',
   NULL,
   'Recepción A NO hereda el turno de otro cajero para vender'
@@ -315,11 +315,11 @@ select lives_ok(
 
 -- Recepción SÍ puede vender (operación de mostrador).
 select lives_ok(
-  $$ select public.create_membership_sale(
+  $$ select public.create_sale(
        (select id from clients where first_name = 'Ana' limit 1),
        null,
        (select id from membership_plans where name = 'Semanal' limit 1),
-       'card', 'none', 0, null) $$,
+       null, 'card', 'none', 0, null) $$,
   'Recepción A SÍ puede registrar una venta de membresía'
 );
 
@@ -373,11 +373,11 @@ select ok(
 );
 
 select throws_ok(
-  $$ select public.create_membership_sale(
+  $$ select public.create_sale(
        (select id from clients where first_name = 'Juan' limit 1),
        null,
        (select id from membership_plans where name = 'Visita' limit 1),
-       'cash', 'none', 0, null) $$,
+       null, 'cash', 'none', 0, null) $$,
   'P0001',
   NULL,
   'Con el turno cerrado ya no se pueden registrar ventas'

@@ -88,7 +88,7 @@ Estaba en «Futuro»; se promueve a fase propia el 2026-08-09. Se numera 4 y no 
 a propósito: Fase 2 sigue abierta esperando las credenciales de Mercado Pago, y
 renumerar escondería ese pendiente.
 - [x] Catálogo e inventario: categorías, SKU, código de barras, costo y precio, existencias con stock mínimo y alertas — *Rebanada A*
-- [ ] Venta de productos en el POS (descuenta existencias, entra a caja y cortes) — *Rebanada B*
+- [x] Venta de productos en el POS (descuenta existencias, entra a caja y cortes) — *Rebanada B*
 - [ ] Toallas en renta: asignación a socio, pendiente/devuelta y alertas — *Rebanada C*
 - [ ] Reportes de inventario: más y menos vendidos, utilidad, existencias, movimientos + export — *Rebanada D*
 
@@ -139,6 +139,15 @@ renumerar escondería ese pendiente.
 - **Los días del asunto se cuentan al ENVIAR, no al encolar.** Con ventana de recuperación, un texto fijo de «vence en 7 días» mentiría si el envío sale con retraso. El `offset_key` sólo elige el tono; el número sale de `end_date` contra el día del envío.
 - **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
 - **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
+
+### Cancelación por línea (resuelta 2026-08-09)
+
+- **Se puede quitar un artículo de una compra sin tirar el ticket.** La línea se marca cancelada; el ticket conserva su folio y muestra *cobrado*, *devuelto* y *neto*.
+- **Los montos guardados de la venta NO se reescriben.** Si al cancelar una línea se recalculara el total de una venta de ayer, un turno de caja ya cerrado y arqueado dejaría de cuadrar y el corte de ese día cambiaría solo. Por eso el ticket es inmutable como se emitió y lo devuelto vive aparte, igual que en Caja.
+- **El descuento se prorratea.** Es del ticket, no de la línea: devolver el importe completo de un artículo sería regalar el descuento que se aplicó al cobrar. Se devuelve `(subtotal − descuento) × (línea / subtotal) × 1.16`.
+- **Cancelar el ticket completo = cancelar todas sus líneas**, por el mismo camino. Dos rutas paralelas que tocan dinero e inventario es como aparecen los descuadres.
+- **Cancelar una línea de producto la regresa al anaquel** donde se vendió; cancelar la línea de membresía revierte la vigencia otorgada. Cancelar un producto no toca la membresía del mismo ticket.
+- **Un ticket de sólo productos no exige socio.** Obligar a elegir cliente para vender un agua lleva a que todo se cargue al socio #0001 y ensucia el historial. Con membresía sí es obligatorio, por definición.
 
 ### Inventario y catálogo (resuelto 2026-08-09)
 

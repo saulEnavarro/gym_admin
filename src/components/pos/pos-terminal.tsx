@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Banknote, CreditCard, ArrowLeftRight } from "lucide-react";
+import { Banknote, CreditCard, ArrowLeftRight, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,18 @@ import { createSale, type SaleFormState } from "@/app/(app)/pos/actions";
 import { ivaAmount, round2, IVA_RATE } from "@/lib/billing/iva";
 import { formatCurrency, cn } from "@/lib/utils";
 import { durationLabel } from "@/lib/memberships/helpers";
+
+export type ProductOption = {
+  id: string;
+  name: string;
+  price: number;
+  sku: string | null;
+  barcode: string | null;
+  /** Existencias en la sucursal del turno. null = no lleva control. */
+  stock: number | null;
+};
+
+export type CartLine = { product: ProductOption; quantity: number };
 
 export type PlanOption = {
   id: string;
@@ -49,11 +61,13 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 export function PosTerminal({
   clients,
   plans,
+  products,
   currency,
   locale,
 }: {
   clients: ClientOption[];
   plans: PlanOption[];
+  products: ProductOption[];
   currency: string;
   locale: string;
 }) {
@@ -69,6 +83,46 @@ export function PosTerminal({
   );
   const [discountValue, setDiscountValue] = useState<string>("");
   const [payment, setPayment] = useState<PaymentMethod>("cash");
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [search, setSearch] = useState("");
+
+  /** Agrega una pieza, o suma una más si el producto ya está en el ticket. */
+  function addProduct(prod: ProductOption) {
+    setCart((prev) => {
+      const found = prev.find((l) => l.product.id === prod.id);
+      if (!found) return [...prev, { product: prod, quantity: 1 }];
+      // No se deja pasar del stock: la base lo rechazaría al cobrar y sería
+      // peor enterarse hasta entonces.
+      if (prod.stock != null && found.quantity >= prod.stock) return prev;
+      return prev.map((l) =>
+        l.product.id === prod.id ? { ...l, quantity: l.quantity + 1 } : l,
+      );
+    });
+    setSearch("");
+  }
+
+  function setQuantity(id: string, qty: number) {
+    setCart((prev) =>
+      qty <= 0
+        ? prev.filter((l) => l.product.id !== id)
+        : prev.map((l) => (l.product.id === id ? { ...l, quantity: qty } : l)),
+    );
+  }
+
+  // Búsqueda por nombre, SKU o código de barras: el lector del mostrador
+  // teclea el código y con Enter se agrega directo.
+  const matches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return products
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.sku?.toLowerCase().includes(q) ||
+          p.barcode?.toLowerCase().includes(q),
+      )
+      .slice(0, 8);
+  }, [products, search]);
 
   const plan = useMemo(
     () => plans.find((p) => p.id === planId) ?? null,
@@ -77,9 +131,15 @@ export function PosTerminal({
   const isCouple = plan?.max_members === 2;
 
   // Totales en vivo (misma fórmula que la BD: base sin IVA → descuento → IVA).
+  const cartTotal = useMemo(
+    () => round2(cart.reduce((s, l) => s + l.product.price * l.quantity, 0)),
+    [cart],
+  );
+
   const totals = useMemo(() => {
-    if (!plan) return null;
-    const subtotal = round2(plan.price * plan.max_members);
+    const planSubtotal = plan ? round2(plan.price * plan.max_members) : 0;
+    const subtotal = round2(planSubtotal + cartTotal);
+    if (subtotal === 0 && !plan) return null;
     const raw = Number(discountValue) || 0;
     let discount = 0;
     if (discountType === "percent") {
@@ -91,10 +151,12 @@ export function PosTerminal({
     const tax = ivaAmount(base);
     const total = round2(base + tax);
     return { subtotal, discount, base, tax, total };
-  }, [plan, discountType, discountValue]);
+  }, [plan, cartTotal, discountType, discountValue]);
 
   const money = (n: number) => formatCurrency(n, currency, locale);
-  const canSubmit = !!clientId && !!planId;
+  // Se puede cobrar con membresía, con productos, o con ambos. La membresía
+  // exige socio; un ticket de sólo productos es para público general.
+  const canSubmit = (!!planId && !!clientId) || cart.length > 0;
 
   return (
     <form action={formAction} className="grid gap-6 lg:grid-cols-3">
@@ -144,15 +206,14 @@ export function PosTerminal({
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="plan_id">Plan *</Label>
+              <Label htmlFor="plan_id">Plan</Label>
               <Select
                 id="plan_id"
                 name="plan_id"
-                required
                 value={planId}
                 onChange={(e) => setPlanId(e.target.value)}
               >
-                <option value="">Selecciona una membresía…</option>
+                <option value="">Sin membresía (sólo productos)</option>
                 {plans.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} — {money(p.price)}
@@ -199,6 +260,127 @@ export function PosTerminal({
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">Productos</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* El carrito viaja en un campo oculto: la base recibe la lista y
+                recalcula todo, aquí sólo se muestra el avance. */}
+            <input
+              type="hidden"
+              name="items"
+              value={JSON.stringify(
+                cart.map((l) => ({
+                  product_id: l.product.id,
+                  quantity: l.quantity,
+                })),
+              )}
+            />
+
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  // El lector del mostrador teclea el código y manda Enter: se
+                  // agrega la coincidencia sin tocar el mouse.
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const first = matches[0];
+                    if (first) addProduct(first);
+                  }
+                }}
+                placeholder="Buscar producto, SKU o escanear código…"
+                className="pl-9"
+                autoComplete="off"
+              />
+            </div>
+
+            {matches.length > 0 && (
+              <ul className="max-h-56 space-y-1 overflow-auto rounded-md border border-border p-1">
+                {matches.map((prod) => {
+                  const agotado = prod.stock != null && prod.stock <= 0;
+                  return (
+                    <li key={prod.id}>
+                      <button
+                        type="button"
+                        disabled={agotado}
+                        onClick={() => addProduct(prod)}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-2 rounded px-3 py-2 text-left text-sm",
+                          agotado
+                            ? "cursor-not-allowed opacity-50"
+                            : "hover:bg-accent hover:text-accent-foreground",
+                        )}
+                      >
+                        <span className="min-w-0 truncate">
+                          {prod.name}
+                          {prod.sku && (
+                            <span className="ml-2 font-mono text-xs text-muted-foreground">
+                              {prod.sku}
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 text-muted-foreground">
+                          {money(prod.price)}
+                          {prod.stock != null && (
+                            <span className="ml-2 text-xs">
+                              {agotado ? "agotado" : `${prod.stock} pz`}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {cart.length === 0 ? (
+              <p className="rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+                Sin productos en el ticket.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border rounded-md border border-border">
+                {cart.map((l) => (
+                  <li
+                    key={l.product.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                  >
+                    <span className="min-w-0 truncate">{l.product.name}</span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={l.product.stock ?? undefined}
+                        value={l.quantity}
+                        onChange={(e) =>
+                          setQuantity(l.product.id, Number(e.target.value))
+                        }
+                        className="h-8 w-16 text-center"
+                        aria-label={`Cantidad de ${l.product.name}`}
+                      />
+                      <span className="w-20 text-right font-medium">
+                        {money(round2(l.product.price * l.quantity))}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(l.product.id, 0)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label={`Quitar ${l.product.name}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">Pago</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -240,15 +422,26 @@ export function PosTerminal({
             <CardTitle className="text-base">Resumen</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            {!plan ? (
+            {!totals ? (
               <p className="text-muted-foreground">
-                Selecciona una membresía para ver el total.
+                Agrega una membresía o algún producto.
               </p>
             ) : (
               <>
-                <Row label={`${plan.name}${isCouple ? " (2 personas)" : ""}`}>
-                  {money(totals!.subtotal)}
-                </Row>
+                {plan && (
+                  <Row label={`${plan.name}${isCouple ? " (2 personas)" : ""}`}>
+                    {money(round2(plan.price * plan.max_members))}
+                  </Row>
+                )}
+                {cart.map((l) => (
+                  <Row
+                    key={l.product.id}
+                    label={`${l.product.name}${l.quantity > 1 ? ` × ${l.quantity}` : ""}`}
+                  >
+                    {money(round2(l.product.price * l.quantity))}
+                  </Row>
+                ))}
+
                 {totals!.discount > 0 && (
                   <Row label="Descuento" muted>
                     −{money(totals!.discount)}
@@ -270,7 +463,7 @@ export function PosTerminal({
             </div>
             {!canSubmit && (
               <p className="text-center text-xs text-muted-foreground">
-                Elige cliente y membresía para continuar.
+                Agrega productos, o elige cliente y membresía.
               </p>
             )}
           </CardContent>

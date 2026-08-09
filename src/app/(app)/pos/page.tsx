@@ -21,7 +21,8 @@ export default async function PosPage() {
   const session = await getOpenCashSession(user.id);
 
   // RLS acota todo a la organización del cajero.
-  const [{ data: plans }, { data: clients }] = await Promise.all([
+  const [{ data: plans }, { data: clients }, { data: products }, { data: stock }] =
+    await Promise.all([
     supabase
       .from("membership_plans")
       .select("id, name, price, max_members, duration_days")
@@ -34,7 +35,33 @@ export default async function PosPage() {
       .eq("is_active", true)
       .order("member_number", { ascending: false })
       .limit(1000),
+    supabase
+      .from("products")
+      .select("id, name, price, sku, barcode, track_stock")
+      .eq("is_active", true)
+      .order("sort_order")
+      .order("name"),
+    // Existencias de la sucursal del turno: el cajero sólo puede vender lo que
+    // tiene enfrente, no lo que hay en otra sucursal.
+    session?.session.branch_id
+      ? supabase
+          .from("product_stock")
+          .select("product_id, quantity")
+          .eq("branch_id", session.session.branch_id)
+      : Promise.resolve({ data: [] as { product_id: string; quantity: number }[] }),
   ]);
+
+  const stockByProduct = new Map(
+    (stock ?? []).map((s) => [s.product_id, s.quantity]),
+  );
+  const productOptions = (products ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    price: Number(p.price),
+    sku: p.sku,
+    barcode: p.barcode,
+    stock: p.track_stock ? (stockByProduct.get(p.id) ?? 0) : null,
+  }));
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -71,13 +98,17 @@ export default async function PosPage() {
             </Link>
           </CardContent>
         </Card>
-      ) : (plans ?? []).length === 0 ? (
+      ) : (plans ?? []).length === 0 && productOptions.length === 0 ? (
         <div className="rounded-md border border-border bg-muted/40 px-4 py-8 text-center text-sm text-muted-foreground">
-          No hay membresías activas.{" "}
+          No hay nada que vender todavía. Crea una{" "}
           <Link href="/memberships/new" className="text-primary hover:underline">
-            Crea una membresía
+            membresía
           </Link>{" "}
-          para poder vender.
+          o un{" "}
+          <Link href="/inventory/new" className="text-primary hover:underline">
+            producto
+          </Link>
+          .
         </div>
       ) : (
         <>
@@ -114,6 +145,7 @@ export default async function PosPage() {
           <PosTerminal
             clients={clients ?? []}
             plans={plans ?? []}
+            products={productOptions}
             currency={currency}
             locale={locale}
           />

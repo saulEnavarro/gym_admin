@@ -1452,35 +1452,50 @@ export type Database = {
       }
       sale_items: {
         Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           description: string
           id: string
           line_total: number
           membership_plan_id: string | null
           org_id: string
+          product_id: string | null
           quantity: number
+          refunded_amount: number | null
           sale_id: string
           unit_price: number
         }
         Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           description: string
           id?: string
           line_total: number
           membership_plan_id?: string | null
           org_id: string
+          product_id?: string | null
           quantity?: number
+          refunded_amount?: number | null
           sale_id: string
           unit_price: number
         }
         Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           description?: string
           id?: string
           line_total?: number
           membership_plan_id?: string | null
           org_id?: string
+          product_id?: string | null
           quantity?: number
+          refunded_amount?: number | null
           sale_id?: string
           unit_price?: number
         }
@@ -1500,6 +1515,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sale_items_sale_id_fkey"
             columns: ["sale_id"]
             isOneToOne: false
@@ -1516,7 +1538,7 @@ export type Database = {
           cancelled_by: string | null
           cash_session_id: string | null
           cashier_id: string | null
-          client_id: string
+          client_id: string | null
           created_at: string
           discount_amount: number
           discount_type: string
@@ -1542,7 +1564,7 @@ export type Database = {
           cancelled_by?: string | null
           cash_session_id?: string | null
           cashier_id?: string | null
-          client_id: string
+          client_id?: string | null
           created_at?: string
           discount_amount?: number
           discount_type?: string
@@ -1568,7 +1590,7 @@ export type Database = {
           cancelled_by?: string | null
           cash_session_id?: string | null
           cashier_id?: string | null
-          client_id?: string
+          client_id?: string | null
           created_at?: string
           discount_amount?: number
           discount_type?: string
@@ -1780,6 +1802,10 @@ export type Database = {
         Args: { p_reason: string; p_sale: string }
         Returns: undefined
       }
+      cancel_sale_item: {
+        Args: { p_item: string; p_reason: string }
+        Returns: number
+      }
       check_in: {
         Args: {
           p_branch?: string
@@ -1798,11 +1824,12 @@ export type Database = {
         Returns: undefined
       }
       close_stale_visits: { Args: { p_hours?: number }; Returns: number }
-      create_membership_sale: {
+      create_sale: {
         Args: {
           p_client: string
           p_discount_type: string
           p_discount_value: number
+          p_items: Json
           p_notes: string
           p_partner: string
           p_payment_method: string

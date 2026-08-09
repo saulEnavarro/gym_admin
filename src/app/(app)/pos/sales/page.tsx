@@ -33,7 +33,10 @@ export default async function SalesHistoryPage() {
   >[];
 
   // Nombres de cliente en un solo query.
-  const clientIds = [...new Set(rows.map((r) => r.client_id))];
+  // Desde la Rebanada B hay tickets sin socio (productos a público general).
+  const clientIds = [
+    ...new Set(rows.map((r) => r.client_id).filter((id): id is string => !!id)),
+  ];
   const { data: clients } = clientIds.length
     ? await supabase
         .from("clients")
@@ -86,7 +89,7 @@ export default async function SalesHistoryPage() {
                 </thead>
                 <tbody>
                   {rows.map((s) => {
-                    const c = clientById.get(s.client_id);
+                    const c = s.client_id ? clientById.get(s.client_id) : null;
                     return (
                       <tr
                         key={s.id}
@@ -112,7 +115,9 @@ export default async function SalesHistoryPage() {
                               {c.first_name} {c.last_name}
                             </span>
                           ) : (
-                            "—"
+                            <span className="text-muted-foreground">
+                              Público general
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">

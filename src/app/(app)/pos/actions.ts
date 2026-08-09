@@ -10,13 +10,32 @@ import type { RpcArgs, RpcArgsNullable } from "@/lib/types/database.types";
 
 export type SaleFormState = { error: string | null };
 
+/** Una línea del carrito de productos. */
+const cartItemSchema = z.object({
+  product_id: z.string().uuid(),
+  quantity: z.coerce.number().int().positive().max(9999),
+});
+
 const saleSchema = z.object({
-  client_id: z.string().uuid("Selecciona un cliente"),
+  // Sin socio se puede vender: un ticket de sólo productos es para público
+  // general. La membresía sí lo exige, y eso lo valida la base.
+  client_id: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
   partner_client_id: z.preprocess(
     emptyToUndefined,
     z.string().uuid().optional(),
   ),
-  plan_id: z.string().uuid("Selecciona una membresía"),
+  plan_id: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
+  items: z
+    .string()
+    .optional()
+    .transform((raw) => {
+      if (!raw) return [] as { product_id: string; quantity: number }[];
+      try {
+        return z.array(cartItemSchema).parse(JSON.parse(raw));
+      } catch {
+        return [] as { product_id: string; quantity: number }[];
+      }
+    }),
   payment_method: z.enum(["cash", "card", "transfer"], {
     errorMap: () => ({ message: "Selecciona un método de pago" }),
   }),
@@ -25,7 +44,7 @@ const saleSchema = z.object({
   notes: z.preprocess(emptyToUndefined, z.string().max(500).optional()),
 });
 
-/** Registra una venta de membresía (atómica en la BD vía create_membership_sale). */
+/** Registra una venta (membresía y/o productos), atómica en la BD. */
 export async function createSale(
   _prev: SaleFormState,
   formData: FormData,
@@ -37,6 +56,7 @@ export async function createSale(
     client_id: formData.get("client_id"),
     partner_client_id: formData.get("partner_client_id"),
     plan_id: formData.get("plan_id"),
+    items: formData.get("items") ?? undefined,
     payment_method: formData.get("payment_method"),
     discount_type: formData.get("discount_type") ?? "none",
     discount_value: formData.get("discount_value") ?? 0,
@@ -49,14 +69,19 @@ export async function createSale(
   const d = parsed.data;
   const supabase = await createSupabaseClient();
 
+  if (!d.plan_id && d.items.length === 0) {
+    return { error: "Agrega una membresía o algún producto al ticket." };
+  }
+
   // La sucursal y el turno los toma la BD del turno de caja abierto del cajero.
   const args: RpcArgsNullable<
-    "create_membership_sale",
-    "p_partner" | "p_notes"
+    "create_sale",
+    "p_client" | "p_partner" | "p_plan" | "p_notes"
   > = {
-    p_client: d.client_id,
+    p_client: d.client_id ?? null,
     p_partner: d.partner_client_id ?? null,
-    p_plan: d.plan_id,
+    p_plan: d.plan_id ?? null,
+    p_items: d.items,
     p_payment_method: d.payment_method,
     p_discount_type: d.discount_type,
     p_discount_value: d.discount_value,
@@ -64,8 +89,8 @@ export async function createSale(
   };
 
   const { data: saleId, error } = await supabase.rpc(
-    "create_membership_sale",
-    args as RpcArgs<"create_membership_sale">,
+    "create_sale",
+    args as RpcArgs<"create_sale">,
   );
 
   if (error || !saleId) {
@@ -75,11 +100,38 @@ export async function createSale(
   revalidatePath("/pos/sales");
   revalidatePath("/clients");
   revalidatePath("/cash");
+  revalidatePath("/inventory");
   redirect(`/pos/sales/${saleId}`);
 }
 
+/** Cancela UNA línea del ticket (el folio y el resto del ticket se conservan). */
+export async function cancelSaleItem(
+  saleId: string,
+  itemId: string,
+  reason: string,
+): Promise<SaleFormState> {
+  const supabase = await createSupabaseClient();
+  const args: RpcArgsNullable<"cancel_sale_item", "p_reason"> = {
+    p_item: itemId,
+    p_reason: reason || null,
+  };
+  const { error } = await supabase.rpc(
+    "cancel_sale_item",
+    args as RpcArgs<"cancel_sale_item">,
+  );
+  if (error) return { error: businessMessage(error.message) };
+
+  revalidatePath(`/pos/sales/${saleId}`);
+  revalidatePath("/pos/sales");
+  revalidatePath("/cash");
+  revalidatePath("/inventory");
+  revalidatePath("/clients");
+  return { error: null };
+}
+
 /**
- * Cancela una venta y revierte sus membresías (regla de reembolso en la BD).
+ * Cancela el ticket completo, que en la base equivale a cancelar todas sus
+ * líneas una por una (mismo camino que la cancelación individual).
  *
  * Devuelve el error en vez de lanzarlo: Next.js redacta los mensajes de las
  * Server Actions que lanzan cuando corre en producción, y aquí el mensaje —
@@ -106,6 +158,7 @@ export async function cancelSale(
   revalidatePath(`/pos/sales/${id}`);
   revalidatePath("/clients");
   revalidatePath("/cash");
+  revalidatePath("/inventory");
   return { error: null };
 }
 
