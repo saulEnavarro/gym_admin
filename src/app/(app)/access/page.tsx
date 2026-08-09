@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
 import { Card, CardContent } from "@/components/ui/card";
 import { AccessTerminal } from "@/components/access/access-terminal";
+import { AutoRefresh } from "@/components/access/auto-refresh";
 import { formatMemberNumber } from "@/lib/clients/helpers";
 import { formatStay } from "@/lib/access/helpers";
 import type { Client } from "@/lib/types/database.types";
@@ -71,10 +72,14 @@ export default async function AccessPage() {
         </p>
       </div>
 
+      {/* La pantalla de recepción se queda abierta todo el día: se refresca
+          sola en vez de mantener una suscripción en vivo (ver AutoRefresh). */}
+      <AutoRefresh seconds={60} />
+
       <AccessTerminal clients={clients ?? []} branches={branches ?? []} />
 
-      {/* Quién está dentro: la vista en vivo llega en la siguiente rebanada;
-          por ahora se pinta al cargar y al registrar cada acceso. */}
+      {/* Quién está dentro: se pinta al cargar, al registrar cada acceso y
+          cada minuto por el refresco automático. */}
       <Card>
         <CardContent className="p-0">
           <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">

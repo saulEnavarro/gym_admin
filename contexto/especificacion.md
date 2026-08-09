@@ -79,9 +79,9 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 
 ### Fase 3 — Acceso y ocupación (MVP-C)
 - [x] Check-in por QR + registro manual en recepción — *Rebanada A*
-- [ ] "Quién está dentro ahora" en tiempo real (Supabase Realtime)
-- [ ] Ocupación: capacidad, % actual, hora pico, hora más vacía, promedios
-- [ ] Horarios recomendados (menor afluencia) visibles para el cliente
+- [x] "Quién está dentro ahora" — *Rebanada B*. **Sin Realtime**: consulta normal + refresco por intervalo (ver decisión abajo).
+- [x] Ocupación: capacidad, % actual, hora pico, hora más vacía, promedios — *Rebanada B*
+- [x] Horarios recomendados (menor afluencia) visibles para el cliente — *Rebanada B*
 
 ### Futuro (arquitectura preparada, no construido en MVP)
 - [ ] Inventario + Catálogo (productos, stock, alertas, toallas venta/renta)
@@ -111,7 +111,7 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - **Cola de jobs** para recordatorios (no cron ingenuo) → reintentos y volumen.
 - **Vistas materializadas** para estadísticas/gráficas (no golpear tablas transaccionales).
 - **Tabla de accesos particionable** (crece sin límite).
-- **Supabase Realtime** para ocupación en vivo (sin polling).
+- ~~**Supabase Realtime** para ocupación en vivo (sin polling).~~ **Descartado (2026-08-09)** — ver «Ocupación sin tiempo real» en las decisiones. Se resuelve con consultas y un refresco por intervalo en la única pantalla que se deja abierta.
 - **CDN** para imágenes; política de tamaño de archivos.
 
 ---
@@ -131,6 +131,22 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - **Los días del asunto se cuentan al ENVIAR, no al encolar.** Con ventana de recuperación, un texto fijo de «vence en 7 días» mentiría si el envío sale con retraso. El `offset_key` sólo elige el tono; el número sale de `end_date` contra el día del envío.
 - **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
 - **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
+
+### Ocupación sin tiempo real (resuelto 2026-08-09)
+
+Se aparta de §6, que pedía Supabase Realtime. El razonamiento:
+
+- **Marcar entrada y salida ya deja todo el dato.** Hora pico, hora más vacía, promedios y aforo actual son consultas sobre `access_logs`. El tiempo real no aportaría información, sólo frescura sin recargar — una propiedad de la interfaz, no de los datos.
+- **Quien más necesitaría esa frescura es justo quien no la necesita.** Recepción *causa* los cambios, así que su pantalla ya se actualiza al registrar cada acceso; y el socio que consulta «¿qué tan lleno está?» decide una vez antes de salir de casa, donde un dato de hace un minuto sirve igual.
+- **Lo que cuesta:** un WebSocket por pestaña abierta y una evaluación de RLS por suscriptor en cada evento. En un SaaS eso escala con **inquilinos**, no con uso, y las conexiones concurrentes son la métrica que topa primero.
+- **En su lugar:** agregados por SQL, y `router.refresh()` cada 60 s sólo en la pantalla de recepción (se pausa si la pestaña no está visible). Una petición por minuto contra una conexión permanente.
+- **Cuándo reconsiderarlo:** una pantalla de aforo en el lobby, o cortar el paso al instante al llegar al cupo. Agregarlo después no cambia el esquema.
+
+**Cómo se mide la ocupación:** no se cuentan entradas por hora —eso dice a qué hora *llega* la gente— sino cuánta gente estuvo **dentro** durante cada hora, que es lo que llena el gimnasio. Cada visita se expande a las horas que cubrió y se promedia entre los días con actividad, no entre los días del calendario.
+
+**El socio ve el conteo, no a las personas.** Su RLS sobre `access_logs` es «sólo mis accesos», así que las funciones que consume el portal son `SECURITY DEFINER` con el alcance de organización comprobado dentro: puede saber cuánta gente hay sin poder saber quién.
+
+**Las particiones llevan red de seguridad.** Una fecha sin partición hace fallar el INSERT, y en esta tabla eso significa que la puerta deja de funcionar. Hay una partición por omisión que recoge lo que no encaje: el registro de acceso nunca falla, a lo sumo esa fila pierde el beneficio del particionado.
 
 ### Control de acceso (resuelto 2026-08-08)
 

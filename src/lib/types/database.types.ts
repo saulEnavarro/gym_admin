@@ -1317,6 +1317,17 @@ export type Database = {
         Args: { c: Database["public"]["Tables"]["clients"]["Row"] }
         Returns: Json
       }
+      access_summary: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          authorized: number
+          avg_minutes: number
+          estimated_pct: number
+          unique_clients: number
+          visits: number
+          visits_per_day: number
+        }[]
+      }
       can_access_branch: { Args: { target_branch: string }; Returns: boolean }
       cancel_sale: {
         Args: { p_reason: string; p_sale: string }
@@ -1391,6 +1402,30 @@ export type Database = {
       next_membership_start: {
         Args: { p_client: string; p_from: string }
         Returns: string
+      }
+      occupancy_by_hour: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          avg_inside: number
+          entries: number
+          hour: number
+        }[]
+      }
+      occupancy_by_weekday_hour: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          avg_inside: number
+          hour: number
+          weekday: number
+        }[]
+      }
+      occupancy_now: {
+        Args: { p_branch?: string }
+        Returns: {
+          capacity: number
+          inside: number
+          pct: number
+        }[]
       }
       open_cash_session: {
         Args: { p_branch: string; p_notes: string; p_opening_float: number }

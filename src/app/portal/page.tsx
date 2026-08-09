@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import QRCode from "qrcode";
-import { CalendarClock, CreditCard, QrCode } from "lucide-react";
+import { Activity, CalendarClock, Clock, CreditCard, QrCode } from "lucide-react";
 import { requirePortalSession } from "@/lib/portal/session";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal/portal-shell";
@@ -13,6 +13,9 @@ import {
   MEMBERSHIP_STATUS_LABELS,
 } from "@/lib/pos/helpers";
 import { cn } from "@/lib/utils";
+import { getOccupancyNow } from "@/lib/occupancy/queries";
+import { crowdLabel, hourLabel, quietHoursFor } from "@/lib/occupancy/helpers";
+import { addDays, todayInTz } from "@/lib/reports/period";
 import type { ClientMembership } from "@/lib/types/database.types";
 
 export const metadata: Metadata = { title: "Portal del cliente" };
@@ -64,6 +67,31 @@ export default async function PortalHomePage() {
     ? await QRCode.toDataURL(token, { width: 240, margin: 1 })
     : null;
 
+  // Ocupación de SU sucursal. Consulta normal, no suscripción en vivo: el socio
+  // mira esto una vez antes de salir de casa y un dato de hace un minuto le
+  // sirve igual (ver migración 0022 sobre por qué se descartó Realtime).
+  const timeZone = branding?.timezone ?? "America/Mexico_City";
+  const hoy = todayInTz(timeZone);
+  const [aforo, semana] = await Promise.all([
+    getOccupancyNow(client.branch_id),
+    supabase.rpc("occupancy_by_weekday_hour", {
+      p_from: addDays(hoy, -27),
+      p_to: hoy,
+      p_tz: timeZone,
+      ...(client.branch_id ? { p_branch: client.branch_id } : {}),
+    }),
+  ]);
+
+  // isodow: 1 = lunes … 7 = domingo (getUTCDay da 0 = domingo).
+  const isoHoy = ((new Date(`${hoy}T12:00:00Z`).getUTCDay() + 6) % 7) + 1;
+  const tranquilas = quietHoursFor(
+    ((semana.data ?? []) as { weekday: number; hour: number; avg_inside: number }[]).map(
+      (r) => ({ ...r, avg_inside: Number(r.avg_inside) }),
+    ),
+    isoHoy,
+  );
+  const gentio = crowdLabel(aforo.inside, aforo.capacity);
+
   return (
     <>
       <BrandStyle primaryColor={branding?.primary_color ?? "#4f46e5"} />
@@ -108,6 +136,58 @@ export default async function PortalHomePage() {
                   No tienes una membresía activa. Acércate a recepción para
                   renovar y seguir entrenando.
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Ocupación de la sucursal */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Activity className="h-4 w-4" />
+                ¿Qué tan lleno está?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold",
+                    gentio.tone === "low" && "bg-success/10 text-success",
+                    gentio.tone === "mid" &&
+                      "bg-amber-500/10 text-amber-600 dark:text-amber-500",
+                    gentio.tone === "high" && "bg-destructive/10 text-destructive",
+                  )}
+                >
+                  {gentio.label}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {aforo.inside} {aforo.inside === 1 ? "persona" : "personas"}
+                  {aforo.capacity ? ` de ${aforo.capacity}` : ""}
+                </span>
+              </div>
+
+              {tranquilas.length > 0 ? (
+                <div className="space-y-1">
+                  <p className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    Horarios con menos gente hoy
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {tranquilas.map((h) => (
+                      <span
+                        key={h.hour}
+                        className="rounded-md border border-border bg-muted/40 px-2.5 py-1 text-sm"
+                      >
+                        {hourLabel(h.hour)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Cuando haya más historial te sugeriremos los mejores horarios.
+                </p>
               )}
             </CardContent>
           </Card>
