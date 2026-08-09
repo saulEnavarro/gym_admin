@@ -89,8 +89,8 @@ a propósito: Fase 2 sigue abierta esperando las credenciales de Mercado Pago, y
 renumerar escondería ese pendiente.
 - [x] Catálogo e inventario: categorías, SKU, código de barras, costo y precio, existencias con stock mínimo y alertas — *Rebanada A*
 - [x] Venta de productos en el POS (descuenta existencias, entra a caja y cortes) — *Rebanada B*
-- [ ] Toallas en renta: asignación a socio, pendiente/devuelta y alertas — *Rebanada C*
-- [ ] Reportes de inventario: más y menos vendidos, utilidad, existencias, movimientos + export — *Rebanada D*
+- [x] Toallas en renta: asignación a socio, pendiente/devuelta y alertas — *Rebanada C*
+- [x] Reportes de inventario: más y menos vendidos, utilidad, existencias, movimientos + export — *Rebanada D*
 
 ### Futuro (arquitectura preparada, no construido en MVP)
 - [ ] Hardware: biométrico, Face ID, RFID, torniquetes (requiere agente on-premise)
@@ -139,6 +139,14 @@ renumerar escondería ese pendiente.
 - **Los días del asunto se cuentan al ENVIAR, no al encolar.** Con ventana de recuperación, un texto fijo de «vence en 7 días» mentiría si el envío sale con retraso. El `offset_key` sólo elige el tono; el número sale de `end_date` contra el día del envío.
 - **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
 - **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
+
+### Préstamos y utilidad (resuelto 2026-08-09)
+
+- **Un préstamo no es una venta.** La toalla sale del anaquel pero sigue siendo del gimnasio: se registra a quién, cuándo y si volvió. Mueve inventario (`rental_out` / `rental_in`) y **no toca la caja**.
+- **La cuota de renta, si se cobra, va por el POS.** Un producto «Renta de toalla» con su precio se vende como cualquier otro. Cobrar desde el módulo de préstamos abriría una segunda ruta hacia la caja, que es justo lo que se ha evitado en todo el proyecto. Por lo mismo **no hay depósito en garantía**: sería dinero retenido fuera del arqueo.
+- **Lo que no vuelve se registra como merma**, no como devolución: la pieza dejó de existir y hay que reponerla. La bitácora explica por qué.
+- **La utilidad usa el costo VIGENTE AL VENDER**, tomado de la última compra anterior a esa venta. Si el proveedor sube el precio en marzo, la utilidad de enero no puede cambiar sola. Sin una compra registrada antes, se cae al costo del catálogo y la fila se marca como estimada.
+- **Las líneas canceladas no cuentan como vendidas:** se devolvieron y el producto regresó al anaquel. Contarlas inflaría el «más vendido» con ventas que se deshicieron.
 
 ### Cancelación por línea (resuelta 2026-08-09)
 

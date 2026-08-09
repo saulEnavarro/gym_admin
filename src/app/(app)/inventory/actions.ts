@@ -21,6 +21,7 @@ const productSchema = z.object({
   cost: z.coerce.number().nonnegative("El costo no puede ser negativo").max(9_999_999),
   price: z.coerce.number().nonnegative("El precio no puede ser negativo").max(9_999_999),
   track_stock: z.coerce.boolean(),
+  is_rentable: z.coerce.boolean(),
   is_active: z.coerce.boolean(),
   sort_order: z.coerce.number().int().min(0).max(9999).default(0),
 });
@@ -35,6 +36,7 @@ function parseProduct(formData: FormData) {
     cost: formData.get("cost") ?? 0,
     price: formData.get("price") ?? 0,
     track_stock: formData.get("track_stock") === "on",
+    is_rentable: formData.get("is_rentable") === "on",
     is_active: formData.get("is_active") === "on",
     sort_order: formData.get("sort_order") ?? 0,
   });
@@ -65,6 +67,7 @@ export async function createProduct(
     cost: d.cost,
     price: d.price,
     track_stock: d.track_stock,
+    is_rentable: d.is_rentable,
     is_active: d.is_active,
     sort_order: d.sort_order,
   };
@@ -106,6 +109,7 @@ export async function updateProduct(
       cost: d.cost,
       price: d.price,
       track_stock: d.track_stock,
+      is_rentable: d.is_rentable,
       is_active: d.is_active,
       sort_order: d.sort_order,
     })

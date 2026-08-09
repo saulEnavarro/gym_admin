@@ -8,6 +8,8 @@ export const MOVEMENT_LABELS: Record<StockMovementKind, string> = {
   loss: "Merma",
   transfer_in: "Traspaso recibido",
   transfer_out: "Traspaso enviado",
+  rental_out: "Préstamo",
+  rental_in: "Devolución de préstamo",
 };
 
 /**
@@ -47,10 +49,22 @@ export function movementLabel(kind: StockMovementKind): string {
 
 /** Suma, resta o fija: define cómo se pinta el movimiento en la bitácora. */
 export function movementSign(kind: StockMovementKind): 1 | -1 | 0 {
-  if (kind === "purchase" || kind === "sale_return" || kind === "transfer_in") {
+  if (
+    kind === "purchase" ||
+    kind === "sale_return" ||
+    kind === "transfer_in" ||
+    kind === "rental_in"
+  ) {
     return 1;
   }
-  if (kind === "sale" || kind === "loss" || kind === "transfer_out") return -1;
+  if (
+    kind === "sale" ||
+    kind === "loss" ||
+    kind === "transfer_out" ||
+    kind === "rental_out"
+  ) {
+    return -1;
+  }
   return 0;
 }
 

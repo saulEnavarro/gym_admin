@@ -244,6 +244,22 @@ export function ProductForm({
           <label className="flex items-start gap-3 text-sm">
             <input
               type="checkbox"
+              name="is_rentable"
+              defaultChecked={product?.is_rentable ?? false}
+              className="mt-0.5 h-4 w-4 rounded border-input"
+            />
+            <span>
+              Se puede prestar
+              <span className="block text-xs text-muted-foreground">
+                Toallas y candados: se entregan al socio y se registran en
+                Préstamos hasta que vuelven. Puede además venderse.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
               name="is_active"
               defaultChecked={product?.is_active ?? true}
               className="mt-0.5 h-4 w-4 rounded border-input"

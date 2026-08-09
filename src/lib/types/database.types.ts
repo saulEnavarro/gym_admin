@@ -1284,6 +1284,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_rentable: boolean
           name: string
           org_id: string
           photo_url: string | null
@@ -1301,6 +1302,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_rentable?: boolean
           name: string
           org_id: string
           photo_url?: string | null
@@ -1318,6 +1320,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_rentable?: boolean
           name?: string
           org_id?: string
           photo_url?: string | null
@@ -1446,6 +1449,89 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rentals: {
+        Row: {
+          branch_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          id: string
+          notes: string | null
+          org_id: string
+          product_id: string
+          quantity: number
+          rented_at: string
+          returned_at: string | null
+          returned_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          org_id: string
+          product_id: string
+          quantity?: number
+          rented_at?: string
+          returned_at?: string | null
+          returned_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          product_id?: string
+          quantity?: number
+          rented_at?: string
+          returned_at?: string | null
+          returned_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rentals_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rentals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rentals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rentals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -1780,6 +1866,55 @@ export type Database = {
           },
         ]
       }
+      pending_rentals: {
+        Row: {
+          branch_id: string | null
+          branch_name: string | null
+          client_id: string | null
+          due_at: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          member_number: number | null
+          minutes_out: number | null
+          org_id: string | null
+          overdue: boolean | null
+          product_id: string | null
+          product_name: string | null
+          quantity: number | null
+          rented_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rentals_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rentals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rentals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rentals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       access_client_json: {
@@ -1858,6 +1993,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      inventory_valuation: {
+        Args: { p_branch?: string }
+        Returns: {
+          below_min: boolean
+          branch_id: string
+          branch_name: string
+          min_quantity: number
+          product_id: string
+          product_name: string
+          quantity: number
+          retail_value: number
+          sku: string
+          stock_value: number
+          unit_cost: number
+        }[]
+      }
       is_org_admin: { Args: { target_org: string }; Returns: boolean }
       is_org_member: { Args: { target_org: string }; Returns: boolean }
       issue_access_token: {
@@ -1906,6 +2057,19 @@ export type Database = {
         Args: { p_branch: string; p_notes: string; p_opening_float: number }
         Returns: string
       }
+      product_sales_report: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          cost: number
+          estimated: boolean
+          margin_pct: number
+          product_id: string
+          product_name: string
+          profit: number
+          quantity: number
+          revenue: number
+        }[]
+      }
       purge_login_attempts: { Args: never; Returns: number }
       register_cash_movement: {
         Args: {
@@ -1932,6 +2096,21 @@ export type Database = {
           p_unit_cost?: number
         }
         Returns: string
+      }
+      rent_product: {
+        Args: {
+          p_branch: string
+          p_client: string
+          p_due_hours?: number
+          p_notes?: string
+          p_product: string
+          p_quantity?: number
+        }
+        Returns: string
+      }
+      return_rental: {
+        Args: { p_lost?: boolean; p_notes?: string; p_rental: string }
+        Returns: undefined
       }
       sales_by_cashier: {
         Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
@@ -2008,6 +2187,20 @@ export type Database = {
       seed_product_categories: { Args: { p_org: string }; Returns: undefined }
       shares_org_with: { Args: { target_user: string }; Returns: boolean }
       stock_movement_sign: { Args: { p_kind: string }; Returns: number }
+      stock_movements_detail: {
+        Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
+        Returns: {
+          actor: string
+          branch_name: string
+          created_at: string
+          kind: string
+          notes: string
+          product_name: string
+          signed_qty: number
+          sku: string
+          unit_cost: number
+        }[]
+      }
       storage_object_org: { Args: { object_name: string }; Returns: string }
       transfer_stock: {
         Args: {
@@ -2284,8 +2477,14 @@ export type StockMovementKind =
   | "adjustment"
   | "loss"
   | "transfer_in"
-  | "transfer_out";
+  | "transfer_out"
+  | "rental_out"
+  | "rental_in";
 
 export type StockMovement = Omit<Row<"stock_movements">, "kind"> & {
   kind: StockMovementKind;
 };
+
+export type Rental = Row<"rentals">;
+export type PendingRental =
+  Database["public"]["Views"]["pending_rentals"]["Row"];

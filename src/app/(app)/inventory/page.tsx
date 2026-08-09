@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, Package, Plus } from "lucide-react";
+import { AlertTriangle, BarChart3, Package, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
 import { buttonVariants } from "@/components/ui/button";
@@ -71,10 +71,19 @@ export default async function InventoryPage() {
             Catálogo de productos y existencias por sucursal.
           </p>
         </div>
-        <Link href="/inventory/new" className={buttonVariants()}>
-          <Plus className="h-4 w-4" />
-          Nuevo producto
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/inventory/reports"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <BarChart3 className="h-4 w-4" />
+            Reportes
+          </Link>
+          <Link href="/inventory/new" className={buttonVariants()}>
+            <Plus className="h-4 w-4" />
+            Nuevo producto
+          </Link>
+        </div>
       </div>
 
       {alerts.length > 0 && (
