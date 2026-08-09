@@ -121,6 +121,150 @@ export type Database = {
           },
         ]
       }
+      access_logs_202605: {
+        Row: {
+          authorized_by: string | null
+          branch_id: string | null
+          client_id: string
+          client_membership_id: string | null
+          created_at: string
+          entered_at: string
+          exit_method: string | null
+          exited_at: string | null
+          id: string
+          method: string
+          org_id: string
+          override_reason: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id?: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
+      access_logs_202606: {
+        Row: {
+          authorized_by: string | null
+          branch_id: string | null
+          client_id: string
+          client_membership_id: string | null
+          created_at: string
+          entered_at: string
+          exit_method: string | null
+          exited_at: string | null
+          id: string
+          method: string
+          org_id: string
+          override_reason: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id?: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
+      access_logs_202607: {
+        Row: {
+          authorized_by: string | null
+          branch_id: string | null
+          client_id: string
+          client_membership_id: string | null
+          created_at: string
+          entered_at: string
+          exit_method: string | null
+          exited_at: string | null
+          id: string
+          method: string
+          org_id: string
+          override_reason: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id?: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
       access_logs_202608: {
         Row: {
           authorized_by: string | null
@@ -218,6 +362,54 @@ export type Database = {
         Relationships: []
       }
       access_logs_202610: {
+        Row: {
+          authorized_by: string | null
+          branch_id: string | null
+          client_id: string
+          client_membership_id: string | null
+          created_at: string
+          entered_at: string
+          exit_method: string | null
+          exited_at: string | null
+          id: string
+          method: string
+          org_id: string
+          override_reason: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id?: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
+      access_logs_default: {
         Row: {
           authorized_by: string | null
           branch_id: string | null
@@ -996,6 +1188,162 @@ export type Database = {
         }
         Relationships: []
       }
+      product_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_stock: {
+        Row: {
+          branch_id: string
+          min_quantity: number | null
+          org_id: string
+          product_id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          min_quantity?: number | null
+          org_id: string
+          product_id: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          min_quantity?: number | null
+          org_id?: string
+          product_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_stock_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_stock_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          barcode: string | null
+          category_id: string | null
+          cost: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string
+          photo_url: string | null
+          price: number
+          sku: string | null
+          sort_order: number
+          track_stock: boolean
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          category_id?: string | null
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id: string
+          photo_url?: string | null
+          price?: number
+          sku?: string | null
+          sort_order?: number
+          track_stock?: boolean
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          category_id?: string | null
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string
+          photo_url?: string | null
+          price?: number
+          sku?: string | null
+          sort_order?: number
+          track_stock?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: string
@@ -1284,6 +1632,70 @@ export type Database = {
           },
         ]
       }
+      stock_movements: {
+        Row: {
+          branch_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          notes: string | null
+          org_id: string
+          product_id: string
+          quantity: number
+          sale_id: string | null
+          unit_cost: number | null
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          org_id: string
+          product_id: string
+          quantity: number
+          sale_id?: string | null
+          unit_cost?: number | null
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          org_id?: string
+          product_id?: string
+          quantity?: number
+          sale_id?: string | null
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       cash_session_totals: {
@@ -1307,6 +1719,41 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      low_stock_products: {
+        Row: {
+          branch_id: string | null
+          branch_name: string | null
+          min_quantity: number | null
+          org_id: string | null
+          product_id: string | null
+          product_name: string | null
+          quantity: number | null
+          sku: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_stock_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_stock_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -1366,6 +1813,7 @@ export type Database = {
       current_cash_session: { Args: never; Returns: string }
       current_client_id: { Args: never; Returns: string }
       current_client_org: { Args: never; Returns: string }
+      current_scope_org: { Args: never; Returns: string }
       current_user_branch_ids: { Args: never; Returns: string[] }
       current_user_org_ids: { Args: never; Returns: string[] }
       enqueue_due_reminders: {
@@ -1446,6 +1894,18 @@ export type Database = {
         Args: { p_email: string; p_ip: string; p_ok: boolean }
         Returns: undefined
       }
+      register_stock_movement: {
+        Args: {
+          p_branch: string
+          p_kind: string
+          p_notes?: string
+          p_product: string
+          p_quantity: number
+          p_sale?: string
+          p_unit_cost?: number
+        }
+        Returns: string
+      }
       sales_by_cashier: {
         Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
         Returns: {
@@ -1518,8 +1978,20 @@ export type Database = {
           transfer_total: number
         }[]
       }
+      seed_product_categories: { Args: { p_org: string }; Returns: undefined }
       shares_org_with: { Args: { target_user: string }; Returns: boolean }
+      stock_movement_sign: { Args: { p_kind: string }; Returns: number }
       storage_object_org: { Args: { object_name: string }; Returns: string }
+      transfer_stock: {
+        Args: {
+          p_from: string
+          p_notes?: string
+          p_product: string
+          p_quantity: number
+          p_to: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "manager" | "receptionist" | "instructor" | "client"
@@ -1770,3 +2242,23 @@ export type RpcArgsNullable<
   K extends keyof RpcArgs<T>,
 > = Omit<RpcArgs<T>, K> & { [P in K]: RpcArgs<T>[P] | null };
 
+export type ProductCategory = Row<"product_categories">;
+export type Product = Row<"products">;
+export type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
+export type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
+export type ProductStock = Row<"product_stock">;
+export type LowStockProduct =
+  Database["public"]["Views"]["low_stock_products"]["Row"];
+
+export type StockMovementKind =
+  | "purchase"
+  | "sale"
+  | "sale_return"
+  | "adjustment"
+  | "loss"
+  | "transfer_in"
+  | "transfer_out";
+
+export type StockMovement = Omit<Row<"stock_movements">, "kind"> & {
+  kind: StockMovementKind;
+};

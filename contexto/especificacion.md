@@ -83,8 +83,16 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - [x] Ocupación: capacidad, % actual, hora pico, hora más vacía, promedios — *Rebanada B*
 - [x] Horarios recomendados (menor afluencia) visibles para el cliente — *Rebanada B*
 
+### Fase 4 — Inventario y catálogo (post-MVP)
+Estaba en «Futuro»; se promueve a fase propia el 2026-08-09. Se numera 4 y no 2
+a propósito: Fase 2 sigue abierta esperando las credenciales de Mercado Pago, y
+renumerar escondería ese pendiente.
+- [x] Catálogo e inventario: categorías, SKU, código de barras, costo y precio, existencias con stock mínimo y alertas — *Rebanada A*
+- [ ] Venta de productos en el POS (descuenta existencias, entra a caja y cortes) — *Rebanada B*
+- [ ] Toallas en renta: asignación a socio, pendiente/devuelta y alertas — *Rebanada C*
+- [ ] Reportes de inventario: más y menos vendidos, utilidad, existencias, movimientos + export — *Rebanada D*
+
 ### Futuro (arquitectura preparada, no construido en MVP)
-- [ ] Inventario + Catálogo (productos, stock, alertas, toallas venta/renta)
 - [ ] Hardware: biométrico, Face ID, RFID, torniquetes (requiere agente on-premise)
 - [ ] Facturación electrónica CFDI 4.0 (vía PAC)
 - [ ] App móvil nativa (iOS/Android)
@@ -131,6 +139,14 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - **Los días del asunto se cuentan al ENVIAR, no al encolar.** Con ventana de recuperación, un texto fijo de «vence en 7 días» mentiría si el envío sale con retraso. El `offset_key` sólo elige el tono; el número sale de `end_date` contra el día del envío.
 - **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
 - **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
+
+### Inventario y catálogo (resuelto 2026-08-09)
+
+- **Un solo ticket puede mezclar membresía y productos.** Es lo natural en mostrador —el socio renueva y se lleva una proteína en un cobro— y `sale_items` ya se diseñó genérica desde el POS de Fase 1 justo para esto.
+- **Las existencias se llevan POR SUCURSAL**, aunque el catálogo (nombre, precio, SKU) sea de la organización. Es la realidad física: el producto está en un anaquel concreto, y una sucursal no puede vender lo que no tiene enfrente. Con una sola bolsa por organización el número diría «hay 3» sin decir dónde. Habrá traspasos entre sucursales.
+- **Precios de producto SIN IVA**, igual que las membresías (§7). El producto además guarda **costo**, que las membresías no tienen, para poder calcular utilidad.
+- **Vender producto exige turno de caja abierto**, misma regla que la venta de membresías.
+- **Las existencias son un saldo, los movimientos son el libro.** `product_stock` lleva el número actual y `stock_movements` la bitácora de cómo llegó ahí (entradas, salidas, ajustes, traspasos, ventas). Sin la bitácora, un descuadre de inventario no se puede investigar.
 
 ### Ocupación sin tiempo real (resuelto 2026-08-09)
 
