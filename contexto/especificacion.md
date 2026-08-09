@@ -92,6 +92,16 @@ renumerar escondería ese pendiente.
 - [x] Toallas en renta: asignación a socio, pendiente/devuelta y alertas — *Rebanada C*
 - [x] Reportes de inventario: más y menos vendidos, utilidad, existencias, movimientos + export — *Rebanada D*
 
+### Fase 5 — Puesta en marcha (onboarding y configuración)
+Nace el 2026-08-09, al descubrir que lo que impedía un beta no era Mercado Pago
+sino que un gimnasio no podía darse de alta ni configurarse solo.
+- [x] Panel de plataforma: alta de gimnasios con su dueño (`/admin`)
+- [x] Sucursales: alta y edición desde la interfaz
+- [x] Equipo: invitar personal, roles y sucursales asignadas
+- [x] Personalización: nombre, color, tipografía, moneda, idioma, contacto
+- [x] Recuperación de contraseña (staff y portal)
+- [ ] Correo saliente propio (Resend) — *configuración de despliegue*
+
 ### Futuro (arquitectura preparada, no construido en MVP)
 - [ ] Hardware: biométrico, Face ID, RFID, torniquetes (requiere agente on-premise)
 - [ ] Facturación electrónica CFDI 4.0 (vía PAC)
@@ -139,6 +149,14 @@ renumerar escondería ese pendiente.
 - **Los días del asunto se cuentan al ENVIAR, no al encolar.** Con ventana de recuperación, un texto fijo de «vence en 7 días» mentiría si el envío sale con retraso. El `offset_key` sólo elige el tono; el número sale de `end_date` contra el día del envío.
 - **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
 - **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
+
+### Super admin de la plataforma (resuelto 2026-08-09)
+
+- **Son dos ejes distintos.** `app_role.admin` es el administrador **de un gimnasio**; el operador de la plataforma es otra cosa y vive en `platform_admins`. No se heredan ni se mezclan.
+- **No se tocó ninguna política de RLS existente.** La tentación era agregar «…o si es super admin» a cada política para que viera todo. Sería ponerle una puerta trasera a *cada una* de las políticas que garantizan el aislamiento entre inquilinos, y un error en esa única función filtraría todos los gimnasios a la vez. En cambio el panel de plataforma vive aparte y usa la llave de servicio sólo para lo que necesita.
+- **El panel no muestra datos de los gimnasios, sólo conteos.** El operador ve que existen y qué tan usados están, sin leer un cliente, una venta ni un acceso. Si algún día hace falta más para dar soporte, que sea una acción explícita y auditada, no el comportamiento normal.
+- **El alta crea siempre una primera sucursal.** Sin ella no se puede abrir turno de caja, y sin turno no se vende: el gimnasio nacería inservible.
+- **La recuperación de contraseña responde igual exista o no la cuenta.** Decir «ese correo no está registrado» permitiría averiguar quién es socio del gimnasio probando direcciones; es la misma razón por la que el login no precisa si falló el correo o la contraseña.
 
 ### Préstamos y utilidad (resuelto 2026-08-09)
 

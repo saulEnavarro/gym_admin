@@ -1164,6 +1164,24 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_admins: {
+        Row: {
+          created_at: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       portal_login_attempts: {
         Row: {
           attempted_at: string
@@ -1352,6 +1370,7 @@ export type Database = {
           account_type: string
           avatar_url: string | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
           phone: string | null
@@ -1361,6 +1380,7 @@ export type Database = {
           account_type?: string
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
@@ -1370,6 +1390,7 @@ export type Database = {
           account_type?: string
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -2011,6 +2032,7 @@ export type Database = {
       }
       is_org_admin: { Args: { target_org: string }; Returns: boolean }
       is_org_member: { Args: { target_org: string }; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
       issue_access_token: {
         Args: { p_client: string; p_days?: number }
         Returns: string
@@ -2057,6 +2079,20 @@ export type Database = {
         Args: { p_branch: string; p_notes: string; p_opening_float: number }
         Returns: string
       }
+      platform_organizations: {
+        Args: never
+        Returns: {
+          branches: number
+          clients: number
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sales_30d: number
+          slug: string
+          staff: number
+        }[]
+      }
       product_sales_report: {
         Args: { p_branch?: string; p_from: string; p_to: string; p_tz?: string }
         Returns: {
@@ -2069,6 +2105,17 @@ export type Database = {
           quantity: number
           revenue: number
         }[]
+      }
+      provision_organization: {
+        Args: {
+          p_branch_name?: string
+          p_currency?: string
+          p_name: string
+          p_owner: string
+          p_slug: string
+          p_timezone?: string
+        }
+        Returns: string
       }
       purge_login_attempts: { Args: never; Returns: number }
       register_cash_movement: {

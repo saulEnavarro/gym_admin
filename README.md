@@ -20,11 +20,13 @@ SaaS **multi-inquilino y multi-sucursal** para la administración integral de gi
 | 2 · Cliente y cobranza | Portal ✅ · Recordatorios ✅ · **Mercado Pago pendiente** |
 | 3 · Acceso y ocupación | ✅ |
 | 4 · Inventario y catálogo | ✅ |
+| 5 · Puesta en marcha (alta de gimnasios, sucursales, equipo, personalización) | ✅ |
 
-**220 pruebas automáticas** de base de datos (`npm run db:test`).
+**237 pruebas automáticas** de base de datos (`npm run db:test`).
 
-> ⚠️ **Todavía no es autoservicio.** Falta el alta de organización, sucursales,
-> equipo y personalización desde la interfaz: hoy se hacen por SQL. Ver
+> Ya es autoservicio: un gimnasio se configura solo desde la interfaz. Para
+> producción falta **un paso de configuración**, conectar Resend como servidor
+> de correo — ver [despliegue](docs/despliegue.md) y
 > [pendientes](contexto/pendientes.md#1-bloquean-el-beta-en-producción).
 
 ---

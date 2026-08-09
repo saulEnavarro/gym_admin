@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { siteUrl } from "@/lib/supabase/config";
 import { requireSession } from "@/lib/auth/session";
 import { fullName } from "@/lib/clients/helpers";
 
@@ -53,7 +54,6 @@ export async function inviteClientToPortal(
     };
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const admin = createAdminClient();
 
   const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(
@@ -65,7 +65,7 @@ export async function inviteClientToPortal(
         org_id: client.org_id,
         full_name: fullName(client),
       },
-      redirectTo: `${siteUrl}/portal/set-password`,
+      redirectTo: `${siteUrl()}/portal/set-password`,
     },
   );
 

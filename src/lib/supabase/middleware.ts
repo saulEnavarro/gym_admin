@@ -9,9 +9,19 @@ import {
 } from "./config";
 
 /** Rutas del panel de STAFF accesibles sin sesión. */
-const STAFF_PUBLIC_PATHS = ["/", "/login", "/auth"];
+const STAFF_PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/auth",
+  "/forgot-password",
+  "/set-password",
+];
 /** Rutas del PORTAL accesibles sin sesión (o para fijar contraseña tras invitar). */
-const PORTAL_PUBLIC_PATHS = ["/portal/login", "/portal/set-password"];
+const PORTAL_PUBLIC_PATHS = [
+  "/portal/login",
+  "/portal/set-password",
+  "/portal/forgot-password",
+];
 
 function matchesPath(pathname: string, list: string[]): boolean {
   return list.some((p) => pathname === p || pathname.startsWith(`${p}/`));

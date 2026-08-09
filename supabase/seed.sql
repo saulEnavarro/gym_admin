@@ -165,3 +165,11 @@ values (
 -- NB: no se siembran membresías aquí a propósito (los tests de RLS cuentan
 -- client_memberships). Para probar recordatorios, crea una membresía por vencer
 -- desde el POS o vía un INSERT puntual y llama a enqueue_due_reminders().
+
+
+-- ── Fase 5 · Administración de la plataforma (LOCAL) ─────────────────────────
+-- Alicia (admin de Iron Temple) opera además la plataforma en desarrollo, para
+-- poder abrir /admin sin crear otra cuenta. En producción esta fila se inserta
+-- a mano con el usuario que corresponda: ver docs/despliegue.md.
+insert into public.platform_admins (user_id, note)
+values ('11111111-1111-1111-1111-111111111111', 'Operador de la plataforma (local)');

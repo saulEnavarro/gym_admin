@@ -19,3 +19,14 @@ export const supabaseBrowserUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
  */
 export const supabaseServerUrl =
   process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+/**
+ * URL pública de la aplicación, para los enlaces de retorno de los correos de
+ * autenticación (invitación, recuperación de contraseña).
+ *
+ * Debe coincidir con las «Redirect URLs» configuradas en Supabase Auth, o el
+ * enlace del correo se rechaza al abrirlo. Ver docs/despliegue.md, paso 5.
+ */
+export function siteUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+}

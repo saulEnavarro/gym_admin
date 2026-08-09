@@ -15,7 +15,7 @@ const MIN_LEN = 8;
  * sesión temporal (el cliente de navegador la detecta en la URL); con ella se
  * llama a updateUser({ password }). Al terminar, redirige al portal.
  */
-export function SetPasswordForm() {
+export function SetPasswordForm({ redirectTo = "/portal" }: { redirectTo?: string } = {}) {
   const router = useRouter();
   const supabase = createClient();
   const [ready, setReady] = useState<boolean | null>(null);
@@ -59,7 +59,7 @@ export function SetPasswordForm() {
       return;
     }
     setDone(true);
-    router.replace("/portal");
+    router.replace(redirectTo);
   }
 
   if (ready === false) {

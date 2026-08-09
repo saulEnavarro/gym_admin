@@ -49,9 +49,9 @@ const NAV: NavItem[] = [
   { label: "Préstamos", href: "/rentals", icon: HandCoins, available: true },
   { label: "Cortes", href: "/reports", icon: BarChart3, available: true },
   { label: "Recordatorios", href: "/settings/reminders", icon: BellRing, available: true },
-  { label: "Sucursales", href: "/branches", icon: Building2, available: false },
-  { label: "Equipo", href: "/team", icon: Users, available: false },
-  { label: "Personalización", href: "/branding", icon: Palette, available: false },
+  { label: "Sucursales", href: "/branches", icon: Building2, available: true },
+  { label: "Equipo", href: "/team", icon: Users, available: true },
+  { label: "Personalización", href: "/branding", icon: Palette, available: true },
   { label: "Auditoría", href: "/audit", icon: ScrollText, available: false },
   { label: "Configuración", href: "/settings", icon: Settings, available: false },
 ];

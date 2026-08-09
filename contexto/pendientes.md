@@ -9,78 +9,38 @@
 
 ## Resumen honesto
 
-Las fases 0, 1, 3 y 4 están construidas y probadas (220 pruebas automáticas).
-Lo que **no** existe todavía es la parte que le permite a un gimnasio *darse de
-alta y configurarse solo*. Hoy la aplicación asume que la organización, las
-sucursales y el equipo ya existen en la base — porque en desarrollo se crean con
-datos de ejemplo.
+Las fases 0, 1, 3, 4 y 5 están construidas y probadas (237 pruebas
+automáticas). Con la Fase 5, un gimnasio **ya puede configurarse solo**: sus
+sucursales, su equipo y su personalización se administran desde la interfaz, y
+el alta de nuevos gimnasios se hace desde el panel de plataforma sin tocar SQL.
 
-Eso convierte el arranque de cada cliente nuevo en un trabajo manual de base de
-datos. Se puede hacer para **un** gimnasio piloto acompañado de cerca; no se
-puede sostener para varios ni dejar que el cliente lo haga solo.
+Para operar en producción falta **un solo paso, y es de configuración**:
+conectar Resend como servidor de correo. De la Fase 2 sigue pendiente Mercado
+Pago, que no bloquea porque se cobra en mostrador.
 
 ---
 
 ## 1. Bloquean el beta en producción
 
-Sin esto, un gimnasio no puede operar por su cuenta.
+> **Resueltos el 2026-08-09 (Fase 5).** Quedaban siete; se cerraron seis. Un
+> gimnasio ya puede configurarse solo desde la interfaz.
 
-### 1.1 Alta de organización (onboarding)
-No hay registro. La organización, su branding y su primer administrador se
-crean hoy con `INSERT` a mano. Falta el flujo: alguien se registra, se crea su
-organización, se le asigna el rol de admin y se le pide lo mínimo (nombre del
-gimnasio, moneda, zona horaria).
+| Pendiente | Estado |
+|---|---|
+| Alta de organización | ✅ Panel de plataforma en `/admin` |
+| Sucursales (CRUD) | ✅ `/branches` |
+| Equipo: invitar y asignar roles | ✅ `/team` |
+| Personalización | ✅ `/branding` |
+| Recuperación de contraseña | ✅ Staff y portal |
+| Runtime de recordatorios | ✅ Documentado en el despliegue (paso 7) |
+| **Correo saliente propio (SMTP)** | ⏳ **Es configuración, no código** |
 
-**Por qué bloquea:** es el punto de entrada. Sin él, cada cliente nuevo es una
-intervención manual en la base de producción.
+### Lo único que falta: conectar Resend
 
-### 1.2 Sucursales (CRUD)
-La tabla `branches` existe y todo el sistema depende de ella —el turno de caja,
-el check-in, las existencias— pero **no hay pantalla** para crearlas o editarlas.
-En la navegación aparece como «Pronto».
-
-**Por qué bloquea:** sin sucursal no se abre turno; sin turno no se vende.
-
-### 1.3 Equipo: invitar personal y asignar roles
-No hay pantalla para invitar a un recepcionista, asignarle rol ni sucursales.
-Las tablas (`org_members`, `member_branches`) y toda la seguridad por rol están
-listas y probadas; falta la interfaz.
-
-**Por qué bloquea:** el dueño no puede dar de alta a su propia recepcionista.
-
-### 1.4 Personalización (nombre, logo, colores, moneda, idioma)
-`org_branding` existe, se aplica en toda la interfaz y en el portal del socio,
-pero **no hay pantalla para editarla**. La especificación marca este punto de
-Fase 0 como hecho: eso es cierto en la base y en cómo se pinta, **no** en la
-capacidad del cliente de cambiarlo.
-
-**Por qué bloquea:** el gimnasio no puede poner su nombre ni su logo.
-
-### 1.5 Correo saliente propio (SMTP en Supabase Auth)
-El correo por defecto de Supabase tiene un límite muy bajo (unos pocos envíos
-por hora) y está pensado sólo para pruebas. Las invitaciones al portal del
-socio y la recuperación de contraseña salen por ahí.
-
-**Por qué bloquea:** con 50 socios invitados el mismo día, la mayoría no
-recibiría su correo. Se resuelve conectando un proveedor (Resend, Amazon SES) —
-está descrito en [despliegue.md](../docs/despliegue.md).
-
-### 1.6 Recuperación de contraseña
-No hay pantalla de «olvidé mi contraseña», ni para el staff ni para el socio.
-Supabase Auth ya lo soporta; falta la interfaz y el correo.
-
-**Por qué bloquea:** el primer socio que olvide su contraseña se queda fuera y
-alguien tendrá que resetearla a mano.
-
-### 1.7 Runtime de recordatorios en producción
-`private.reminder_runtime` guarda la URL de la Edge Function y su secreto. En
-local apunta a `host.docker.internal`. **En producción hay que sustituir esa
-fila** con la URL real del proyecto y un secreto nuevo.
-
-**Por qué bloquea:** si no se hace, el agendado diario intenta llamar a una
-dirección que no existe y no sale ningún recordatorio. Falla en silencio.
-
----
+El correo por defecto de Supabase manda unos pocos envíos por hora. Sin SMTP
+propio, las invitaciones al equipo, las del portal y la recuperación de
+contraseña prácticamente no salen. Es un paso de configuración, no desarrollo:
+[despliegue.md, paso 4](../docs/despliegue.md).
 
 ## 2. No bloquean el beta, pero conviene resolverlos pronto
 

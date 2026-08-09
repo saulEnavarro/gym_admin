@@ -161,8 +161,11 @@ decirle a Supabase cuáles son válidas, o el enlace no funcionará.
 **Authentication → URL Configuration**:
 
 - **Site URL:** `https://tudominio.com`
-- **Redirect URLs:** agrega
-  - `https://tudominio.com/portal/set-password`
+- **Redirect URLs:** agrega las cuatro. Si falta una, el enlace de ese correo
+  en concreto no funcionará:
+  - `https://tudominio.com/set-password` — invitación al equipo y recuperación del staff
+  - `https://tudominio.com/login`
+  - `https://tudominio.com/portal/set-password` — invitación y recuperación del socio
   - `https://tudominio.com/portal/login`
 
 ### Paso 6 — Desplegar la aplicación en Vercel
@@ -219,45 +222,56 @@ on conflict (singleton) do update
 > **Si te saltas este paso, los recordatorios fallan en silencio.** La tarea
 > programada intentará llamar a una dirección que no existe y nadie te avisará.
 
-### Paso 8 — Crear el primer gimnasio y su administrador
+### Paso 8 — Darte de alta como operador de la plataforma
 
-Hoy **no hay pantalla de registro** (ver [pendientes](../contexto/pendientes.md)),
-así que el primer alta se hace desde el panel de Supabase. Es la única parte
-manual, y sólo ocurre una vez por gimnasio.
+Sólo esto se hace a mano, **una sola vez en la vida del proyecto**. De aquí en
+adelante los gimnasios se dan de alta desde la aplicación.
 
-1. **Authentication → Users → Add user**. Crea la cuenta del dueño con su correo
-   y una contraseña temporal. Marca *Auto Confirm User*.
-2. Copia el **UID** que aparece en la lista.
-3. En **SQL Editor**, sustituye los valores y ejecuta:
+Tú, como dueño de la plataforma, eres una figura distinta del administrador de
+un gimnasio. Vives en la tabla `platform_admins`, que no tiene pantalla para
+editarse: darse ese permiso a uno mismo tiene que costar entrar al panel de
+Supabase, no un clic.
+
+1. **Authentication → Users → Add user**: crea *tu* cuenta con tu correo y una
+   contraseña. Marca *Auto Confirm User*.
+2. En **SQL Editor**:
 
 ```sql
--- 1) El gimnasio. El 'slug' es un identificador corto, en minúsculas y sin
---    acentos ni espacios.
-insert into public.organizations (name, slug)
-values ('Nombre del Gimnasio', 'nombre-del-gimnasio')
-returning id;   -- ← copia este id
-
--- 2) El dueño como administrador. Pega el id de arriba y el UID del usuario.
-insert into public.org_members (org_id, user_id, role)
-values ('EL-ID-DEL-GIMNASIO', 'EL-UID-DEL-USUARIO', 'admin');
-
--- 3) Al menos una sucursal. Sin ella no se puede abrir turno de caja.
-insert into public.branches (org_id, name, address, phone, capacity)
-values ('EL-ID-DEL-GIMNASIO', 'Matriz', 'Su dirección', '55-0000-0000', 60);
-
--- 4) Nombre visible, moneda y zona horaria.
-update public.org_branding
-   set display_name  = 'Nombre del Gimnasio',
-       primary_color = '#dc2626',
-       currency      = 'MXN',
-       locale        = 'es-MX',
-       timezone      = 'America/Mexico_City'
- where org_id = 'EL-ID-DEL-GIMNASIO';
+-- Usa el mismo correo del paso anterior.
+insert into public.platform_admins (user_id, note)
+select id, 'operador de la plataforma'
+  from auth.users
+ where email = 'tucorreo@tudominio.com'
+on conflict (user_id) do nothing;
 ```
 
-Las 8 categorías de producto se crean solas al insertar la organización.
+3. Entra a `https://tudominio.com/admin`. Si ves «Administración de la
+   plataforma», quedó.
 
-4. Entra a `https://tudominio.com/login` con esa cuenta y cambia la contraseña.
+> Si te equivocas de correo, la consulta inserta cero filas sin avisar (`where`
+> no encontró a nadie). Compruébalo con
+> `select count(*) from public.platform_admins;` — debe dar 1.
+
+### Paso 9 — Dar de alta cada gimnasio
+
+Ya desde la aplicación, en `/admin`:
+
+1. Captura el **nombre del gimnasio**; el identificador corto se propone solo.
+2. Captura el **correo del dueño** y su nombre.
+3. **Dar de alta el gimnasio.**
+
+Eso crea de una vez la organización, su primera sucursal («Matriz»), la
+personalización con moneda MXN y zona horaria de Ciudad de México, las 8
+categorías de producto, y le manda al dueño una invitación para poner su
+contraseña.
+
+A partir de ahí el dueño se configura solo, sin ti: `/branches` para sus
+sucursales, `/team` para invitar a su gente, `/branding` para su nombre y
+colores. Tú no ves sus datos — el panel de plataforma sólo muestra conteos.
+
+> **Cuida a quién le das `platform_admins`.** No es «un administrador más»: es
+> quien puede crear gimnasios. Para operar el suyo, el dueño **no** necesita
+> este permiso, y no debe tenerlo.
 
 ---
 
@@ -318,7 +332,7 @@ npx supabase db push
 Antes de subir, en tu máquina:
 
 ```bash
-npx supabase db reset && npx supabase test db   # 220 pruebas
+npx supabase db reset && npx supabase test db   # 237 pruebas
 npx tsc --noEmit && npx next build
 ```
 

@@ -59,6 +59,12 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       )}
 
       <SubmitButton />
+
+      <p className="text-center text-sm">
+        <a href="/forgot-password" className="text-muted-foreground hover:text-foreground">
+          ¿Olvidaste tu contraseña?
+        </a>
+      </p>
     </form>
   );
 }
