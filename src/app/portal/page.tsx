@@ -32,11 +32,37 @@ export default async function PortalHomePage() {
   const current = memRows.find((m) => membershipStatus(m) === "active") ?? null;
   const days = current ? daysRemaining(current.end_date) : 0;
 
-  // QR personal: codifica el id de la ficha (base para el check-in de Fase 3).
-  const qrDataUrl = await QRCode.toDataURL(client.id, {
-    width: 240,
-    margin: 1,
-  });
+  // QR personal. Codifica un token propio, NO `client.id` —ese id ya viaja en
+  // las URLs del panel y no sirve como credencial de puerta.
+  //
+  // Se renueva sólo cuando faltan menos de 15 días para que caduque, y no en
+  // cada visita a propósito: muchos gimnasios no tienen WiFi para socios, así
+  // que la captura de pantalla que el socio tomó hace días tiene que seguir
+  // abriendo. Rotar aquí (con datos) es justo cuando puede capturar el nuevo.
+  const RENEW_WITHIN_DAYS = 15;
+  const expiresAt = client.access_token_expires_at
+    ? new Date(client.access_token_expires_at)
+    : null;
+  const needsToken =
+    !client.access_token ||
+    !expiresAt ||
+    expiresAt.getTime() - Date.now() < RENEW_WITHIN_DAYS * 86_400_000;
+
+  let token = client.access_token;
+  let tokenExpiresAt = expiresAt;
+  if (needsToken) {
+    const { data: issued } = await supabase.rpc("issue_access_token", {
+      p_client: client.id,
+    });
+    if (issued) {
+      token = issued;
+      tokenExpiresAt = new Date(Date.now() + 90 * 86_400_000);
+    }
+  }
+
+  const qrDataUrl = token
+    ? await QRCode.toDataURL(token, { width: 240, margin: 1 })
+    : null;
 
   return (
     <>
@@ -95,20 +121,41 @@ export default async function PortalHomePage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-3 text-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={qrDataUrl}
-                alt="Código QR personal"
-                width={240}
-                height={240}
-                className="rounded-lg border border-border bg-white p-2"
-              />
-              <p className="font-mono text-sm text-muted-foreground">
-                Cliente {formatMemberNumber(client.member_number)}
-              </p>
-              <p className="max-w-xs text-xs text-muted-foreground">
-                Muestra este código en recepción para registrar tu acceso.
-              </p>
+              {qrDataUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={qrDataUrl}
+                    alt="Código QR personal"
+                    width={240}
+                    height={240}
+                    className="rounded-lg border border-border bg-white p-2"
+                  />
+                  <p className="font-mono text-sm text-muted-foreground">
+                    Cliente {formatMemberNumber(client.member_number)}
+                  </p>
+                  <p className="max-w-xs text-xs text-muted-foreground">
+                    Muestra este código en recepción para registrar tu acceso.
+                    Puedes tomarle una captura: sirve aunque no tengas internet
+                    en el gimnasio.
+                  </p>
+                  {tokenExpiresAt && (
+                    <p className="text-xs text-muted-foreground/70">
+                      Válido hasta el{" "}
+                      {tokenExpiresAt.toLocaleDateString("es-MX", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                      . Se renueva solo cuando abras el portal.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="max-w-xs text-sm text-muted-foreground">
+                  No pudimos generar tu código. Pídelo en recepción.
+                </p>
+              )}
             </CardContent>
           </Card>
 

@@ -44,6 +44,227 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_logs: {
+        Row: {
+          authorized_by: string | null
+          branch_id: string | null
+          client_id: string
+          client_membership_id: string | null
+          created_at: string
+          entered_at: string
+          exit_method: string | null
+          exited_at: string | null
+          id: string
+          method: string
+          org_id: string
+          override_reason: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id?: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_logs_client_membership_id_fkey"
+            columns: ["client_membership_id"]
+            isOneToOne: false
+            referencedRelation: "client_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      access_logs_202608: {
+        Row: {
+          authorized_by: string | null
+          branch_id: string | null
+          client_id: string
+          client_membership_id: string | null
+          created_at: string
+          entered_at: string
+          exit_method: string | null
+          exited_at: string | null
+          id: string
+          method: string
+          org_id: string
+          override_reason: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id?: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
+      access_logs_202609: {
+        Row: {
+          authorized_by: string | null
+          branch_id: string | null
+          client_id: string
+          client_membership_id: string | null
+          created_at: string
+          entered_at: string
+          exit_method: string | null
+          exited_at: string | null
+          id: string
+          method: string
+          org_id: string
+          override_reason: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id?: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
+      access_logs_202610: {
+        Row: {
+          authorized_by: string | null
+          branch_id: string | null
+          client_id: string
+          client_membership_id: string | null
+          created_at: string
+          entered_at: string
+          exit_method: string | null
+          exited_at: string | null
+          id: string
+          method: string
+          org_id: string
+          override_reason: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method: string
+          org_id: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          branch_id?: string | null
+          client_id?: string
+          client_membership_id?: string | null
+          created_at?: string
+          entered_at?: string
+          exit_method?: string | null
+          exited_at?: string | null
+          id?: string
+          method?: string
+          org_id?: string
+          override_reason?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -104,6 +325,7 @@ export type Database = {
       branches: {
         Row: {
           address: string | null
+          capacity: number | null
           created_at: string
           id: string
           is_active: boolean
@@ -115,6 +337,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          capacity?: number | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -126,6 +349,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          capacity?: number | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -361,6 +585,8 @@ export type Database = {
       }
       clients: {
         Row: {
+          access_token: string | null
+          access_token_expires_at: string | null
           address: string | null
           birth_date: string | null
           branch_id: string | null
@@ -389,6 +615,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
           address?: string | null
           birth_date?: string | null
           branch_id?: string | null
@@ -417,6 +645,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
           address?: string | null
           birth_date?: string | null
           branch_id?: string | null
@@ -1083,15 +1313,33 @@ export type Database = {
       }
     }
     Functions: {
+      access_client_json: {
+        Args: { c: Database["public"]["Tables"]["clients"]["Row"] }
+        Returns: Json
+      }
       can_access_branch: { Args: { target_branch: string }; Returns: boolean }
       cancel_sale: {
         Args: { p_reason: string; p_sale: string }
         Returns: undefined
       }
+      check_in: {
+        Args: {
+          p_branch?: string
+          p_client?: string
+          p_override_reason?: string
+          p_token?: string
+        }
+        Returns: Json
+      }
+      check_out: {
+        Args: { p_client?: string; p_token?: string }
+        Returns: Json
+      }
       close_cash_session: {
         Args: { p_counted_cash: number; p_notes: string; p_session: string }
         Returns: undefined
       }
+      close_stale_visits: { Args: { p_hours?: number }; Returns: number }
       create_membership_sale: {
         Args: {
           p_client: string
@@ -1113,6 +1361,10 @@ export type Database = {
         Args: { p_lookback?: number; p_today?: string }
         Returns: number
       }
+      ensure_access_log_partition: {
+        Args: { p_month: string }
+        Returns: undefined
+      }
       has_role_in_org: {
         Args: {
           roles: Database["public"]["Enums"]["app_role"][]
@@ -1122,6 +1374,10 @@ export type Database = {
       }
       is_org_admin: { Args: { target_org: string }; Returns: boolean }
       is_org_member: { Args: { target_org: string }; Returns: boolean }
+      issue_access_token: {
+        Args: { p_client: string; p_days?: number }
+        Returns: string
+      }
       login_retry_delay: {
         Args: { p_email: string; p_ip: string }
         Returns: number

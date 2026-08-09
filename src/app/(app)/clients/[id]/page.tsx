@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/card";
 import { ToggleActiveButton } from "@/components/clients/toggle-active-button";
 import { InvitePortalButton } from "@/components/clients/invite-portal-button";
+import { RevokeAccessQrButton } from "@/components/clients/revoke-access-qr-button";
 import { RemindersOptOutToggle } from "@/components/clients/reminders-opt-out-toggle";
 import { getSignedUrl, CLIENT_PHOTOS_BUCKET } from "@/lib/storage";
 import {
@@ -264,11 +265,17 @@ export default async function ClientDetailPage({
             <Mail className="h-4 w-4" />
             Portal del cliente
           </CardTitle>
-          <InvitePortalButton
-            clientId={c.id}
-            linked={Boolean(c.user_id)}
-            hasEmail={Boolean(c.email)}
-          />
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <InvitePortalButton
+              clientId={c.id}
+              linked={Boolean(c.user_id)}
+              hasEmail={Boolean(c.email)}
+            />
+            <RevokeAccessQrButton
+              clientId={c.id}
+              hasToken={Boolean(c.access_token)}
+            />
+          </div>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           {c.user_id

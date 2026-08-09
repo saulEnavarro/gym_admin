@@ -78,7 +78,7 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - [x] Recordatorios por correo en cola de jobs (configurable, con opt-out) — *Rebanada C*. **Por omisión sólo se envía un aviso: 7 días antes.** Los otros momentos (−3, día 0, +7, +30) existen y se encienden desde /settings/reminders.
 
 ### Fase 3 — Acceso y ocupación (MVP-C)
-- [ ] Check-in por QR + registro manual en recepción
+- [x] Check-in por QR + registro manual en recepción — *Rebanada A*
 - [ ] "Quién está dentro ahora" en tiempo real (Supabase Realtime)
 - [ ] Ocupación: capacidad, % actual, hora pico, hora más vacía, promedios
 - [ ] Horarios recomendados (menor afluencia) visibles para el cliente
@@ -120,7 +120,7 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 
 - [x] **IVA (resuelto 2026-06-26):** los precios capturados son **base gravable, SIN IVA**. El IVA (16%) se calcula y se suma **aparte** en el ticket, el total cobrado y los reportes. Implica: cada producto/membresía guarda precio sin IVA; el POS desglosa subtotal + IVA + total.
 - [x] **Parejas (resuelto 2026-07-16):** venta **vinculada** (una venta liga a 2 clientes con vencimiento compartido, total = 2 × precio). Si **solo uno renueva**, se le vende una **membresía individual** al precio individual y el vínculo de pareja se rompe.
-- [ ] Periodo de gracia de acceso para membresías vencidas *(se decidirá en el slice de Acceso, Fase 3)*
+- [x] **Periodo de gracia (resuelto 2026-08-08):** ninguno. Vencida = no entra; recepción puede autorizar el paso caso por caso y queda registrado quién autorizó y por qué.
 - [ ] ¿Hay datos existentes (clientes/inventario) que migrar?
 - [ ] Modo offline/contingencia del POS si se cae internet *(post-MVP; el POS del MVP requiere conexión)*
 
@@ -131,6 +131,17 @@ Permisos personalizables por sucursal. Logs de auditoría de acciones sensibles.
 - **Los días del asunto se cuentan al ENVIAR, no al encolar.** Con ventana de recuperación, un texto fijo de «vence en 7 días» mentiría si el envío sale con retraso. El `offset_key` sólo elige el tono; el número sale de `end_date` contra el día del envío.
 - **Reintentos con retroceso exponencial** (5 min ×3, hasta 5 intentos). Un fallo deja la fila en `pending` reprogramada; `failed` pasa a significar «descartado tras agotar intentos» y es un buzón para revisar a mano. Las transiciones viven en la base (`mark_reminder_sent` / `mark_reminder_failed`) para que la política no dependa de quién drene la cola.
 - **Agenda partida en dos:** encolar es diario (el momento cae un día concreto); drenar es horario, o un reintento programado a 15 minutos esperaría al día siguiente.
+
+### Control de acceso (resuelto 2026-08-08)
+
+- **La credencial deja de ser `clients.id`.** Ese id ya viaja en las URLs del panel, así que como llave de puerta no servía. El socio tiene ahora un `access_token` propio, revocable, con caducidad.
+- **El QR dura 90 días y se puede capturar en pantalla, a propósito.** Muchos gimnasios no tienen WiFi para socios: si el código caducara en minutos, quien llega sin datos se quedaría fuera. Se renueva solo cuando el socio abre el portal *con* conexión, que es justo cuando puede capturar el nuevo. Consecuencia asumida: permitiendo capturas, la caducidad **no** es un control anti-préstamo fuerte.
+- **El control anti-préstamo real es la foto.** La pantalla de check-in muestra en grande la foto del socio para que recepción vea si quien pasa es el dueño del QR, y desde la ficha se puede **revocar** el código —lo que mata cualquier captura que ande circulando.
+- **Vencida = no entra**, salvo autorización explícita de recepción, que exige motivo y se guarda con el usuario que la dio. No hay días de gracia automáticos.
+- **Un segundo escaneo no duplica la visita:** si no, un socio nervioso contaría como dos personas en la ocupación.
+- **La visita cierra al escanear la salida, y un barrido horario cierra las que nadie cerró** (`exit_method = 'auto'`, duración estimada). Sin ese respaldo, «quién está dentro» acumularía gente que se fue hace días.
+- **`access_logs` va particionada por mes** (§6: crece sin límite), con un job que crea la partición del mes siguiente por adelantado — sin partición, un INSERT falla y nadie podría entrar.
+- **Rotar el token es `SECURITY DEFINER` con autorización a mano, no una política de UPDATE.** Una política «el socio puede actualizar su fila» le habría abierto todas las columnas: podría reactivarse tras una baja (`is_active`) o mudar su ficha a otra organización (`org_id`).
 
 ### Anti-fuerza bruta del portal (resuelto 2026-08-08)
 
