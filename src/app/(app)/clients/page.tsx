@@ -6,6 +6,7 @@ import { requireSession } from "@/lib/auth/session";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClientsToolbar } from "@/components/clients/clients-toolbar";
+import { ClientImportDropzone } from "@/components/clients/client-import-dropzone";
 import {
   ageFromBirthDate,
   formatMemberNumber,
@@ -79,6 +80,7 @@ export default async function ClientsPage({
         </Link>
       </div>
 
+      <ClientImportDropzone />
       <ClientsToolbar />
 
       {rows.length === 0 ? (
