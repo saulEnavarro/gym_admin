@@ -24,6 +24,9 @@ export function ClientsToolbar() {
       const params = new URLSearchParams(searchParams.toString());
       if (q) params.set("q", q);
       else params.delete("q");
+      // Al cambiar el filtro se vuelve al principio: la página 5 del listado
+      // anterior no tiene por qué existir en el nuevo.
+      params.delete("page");
       startTransition(() => router.replace(`${pathname}?${params.toString()}`));
     }, 300);
     return () => clearTimeout(t);
@@ -34,6 +37,7 @@ export function ClientsToolbar() {
     const params = new URLSearchParams(searchParams.toString());
     if (value && value !== "all") params.set("status", value);
     else params.delete("status");
+    params.delete("page");
     startTransition(() => router.replace(`${pathname}?${params.toString()}`));
   }
 

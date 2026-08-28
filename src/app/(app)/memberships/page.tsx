@@ -6,6 +6,7 @@ import { requireSession } from "@/lib/auth/session";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TogglePlanActive } from "@/components/memberships/toggle-plan-active";
+import { DeletePlanButton } from "@/components/memberships/delete-plan-button";
 import { formatCurrency } from "@/lib/utils";
 import { withIva } from "@/lib/billing/iva";
 import { durationLabel, membersLabel } from "@/lib/memberships/helpers";
@@ -110,7 +111,7 @@ export default async function MembershipsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-4">
+                        <div className="flex flex-wrap items-center justify-end gap-4">
                           <Link
                             href={`/memberships/${p.id}/edit`}
                             className="inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
@@ -119,6 +120,7 @@ export default async function MembershipsPage() {
                             Editar
                           </Link>
                           <TogglePlanActive id={p.id} active={p.is_active} />
+                          <DeletePlanButton id={p.id} name={p.name} />
                         </div>
                       </td>
                     </tr>

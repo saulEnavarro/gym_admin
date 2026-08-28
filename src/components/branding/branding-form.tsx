@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, ImagePlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,13 +34,37 @@ function SubmitButton() {
   );
 }
 
-export function BrandingForm({ branding }: { branding: OrgBranding }) {
+export function BrandingForm({
+  branding,
+  photoUrl,
+}: {
+  branding: OrgBranding;
+  /** URL firmada de la foto guardada, o null si todavía no hay ninguna. */
+  photoUrl: string | null;
+}) {
   const [state, formAction] = useActionState<BrandingFormState, FormData>(
     saveBranding,
     { error: null, ok: null },
   );
   const [color, setColor] = useState(branding.primary_color);
   const [name, setName] = useState(branding.display_name ?? "");
+  // Vista previa local del archivo elegido, antes de subirlo.
+  const [preview, setPreview] = useState<string | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
+
+  // Al guardar, React hace form.reset() y el <input type="file"> se vacía. La
+  // vista previa local tiene que irse con él: a partir de ahí manda la foto ya
+  // guardada, que llega firmada desde el servidor.
+  useEffect(() => {
+    if (!state.ok) return;
+    setPreview((url) => {
+      if (url) URL.revokeObjectURL(url);
+      return null;
+    });
+    setRemovePhoto(false);
+  }, [state]);
+
+  const shownPhoto = preview ?? (removePhoto ? null : photoUrl);
 
   return (
     <form action={formAction} className="space-y-6">
@@ -99,6 +123,65 @@ export function BrandingForm({ branding }: { branding: OrgBranding }) {
             </Select>
           </div>
 
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="photo">Foto del establecimiento</Label>
+            <p className="text-sm text-muted-foreground">
+              Sustituye al ícono genérico en el menú y en el portal de tus
+              socios. Una foto de la fachada o del interior funciona mejor que
+              un logotipo con letras chicas.
+            </p>
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <div className="flex h-24 w-40 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40">
+                {shownPhoto ? (
+                  // Es una URL firmada temporal o un blob: local — sin next/image,
+                  // que exige dominios fijos y aquí no aportaría nada.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={shownPhoto}
+                    alt="Foto del establecimiento"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <ImagePlus className="h-6 w-6 text-muted-foreground/60" />
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1 space-y-2">
+                <Input
+                  id="photo"
+                  name="photo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="h-auto py-2 file:mr-3 file:rounded file:border-0 file:bg-secondary file:px-3 file:py-1 file:text-sm file:font-medium file:text-secondary-foreground"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    setPreview(file ? URL.createObjectURL(file) : null);
+                    if (file) setRemovePhoto(false);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  JPG, PNG o WEBP, hasta 3 MB. Se guarda en privado y se muestra
+                  con enlaces temporales.
+                </p>
+
+                {photoUrl && !preview && (
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      name="remove_photo"
+                      checked={removePhoto}
+                      onChange={(e) => setRemovePhoto(e.target.checked)}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Quitar la foto al guardar
+                  </label>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Vista previa: el color se aplica de verdad al guardar. */}
           <div
             className="rounded-md border border-border p-4 sm:col-span-2"
@@ -108,12 +191,21 @@ export function BrandingForm({ branding }: { branding: OrgBranding }) {
               Vista previa
             </p>
             <div className="mt-2 flex items-center gap-3">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold text-white"
-                style={{ backgroundColor: color }}
-              >
-                {(name || "G").slice(0, 1).toUpperCase()}
-              </div>
+              {shownPhoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={shownPhoto}
+                  alt=""
+                  className="h-10 w-10 rounded-lg object-cover"
+                />
+              ) : (
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold text-white"
+                  style={{ backgroundColor: color }}
+                >
+                  {(name || "G").slice(0, 1).toUpperCase()}
+                </div>
+              )}
               <span className="font-semibold">{name || "Tu gimnasio"}</span>
               <span
                 className="ml-auto rounded-md px-3 py-1.5 text-sm font-medium text-white"

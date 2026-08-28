@@ -5,8 +5,12 @@ import { z } from "zod";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
 import { emptyToUndefined } from "@/lib/forms";
+import { ORG_LOGOS_BUCKET } from "@/lib/storage";
 
 export type BrandingFormState = { error: string | null; ok?: string | null };
+
+const MAX_PHOTO_BYTES = 3 * 1024 * 1024; // 3 MB
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const schema = z.object({
   display_name: z.string().trim().min(2, "El nombre es obligatorio").max(120),
@@ -24,6 +28,39 @@ const schema = z.object({
   contact_phone: z.preprocess(emptyToUndefined, z.string().max(40).optional()),
   address: z.preprocess(emptyToUndefined, z.string().max(400).optional()),
 });
+
+type SupabaseServer = Awaited<ReturnType<typeof createSupabaseClient>>;
+
+/**
+ * Sube la foto del establecimiento al bucket privado con la ruta obligatoria
+ * «{org_id}/...» (es la que usan las políticas de Storage para aislar orgs) y
+ * devuelve la ruta, no una URL: se sirve firmada y con caducidad.
+ */
+async function uploadOrgPhoto(
+  supabase: SupabaseServer,
+  orgId: string,
+  file: File,
+): Promise<string> {
+  if (file.size > MAX_PHOTO_BYTES) {
+    throw new Error("La foto supera el tamaño máximo de 3 MB.");
+  }
+  if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+    throw new Error("Formato de foto no permitido (usa JPG, PNG o WEBP).");
+  }
+  const ext =
+    file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const path = `${orgId}/establecimiento-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from(ORG_LOGOS_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) {
+    if (/row-level security|permission denied|Unauthorized/i.test(error.message)) {
+      throw new Error("Sólo un administrador puede cambiar la foto.");
+    }
+    throw new Error("No se pudo subir la foto del establecimiento.");
+  }
+  return path;
+}
 
 /** Guarda la personalización del gimnasio. La RLS exige rol de administrador. */
 export async function saveBranding(
@@ -50,6 +87,26 @@ export async function saveBranding(
   const d = parsed.data;
   const supabase = await createSupabaseClient();
 
+  // `undefined` = la foto no se toca; `null` = se quita; string = ruta nueva.
+  const photo = formData.get("photo");
+  let logoPath: string | null | undefined;
+  if (photo instanceof File && photo.size > 0) {
+    try {
+      logoPath = await uploadOrgPhoto(supabase, membership.org_id, photo);
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "No se pudo subir la foto." };
+    }
+  } else if (formData.get("remove_photo") === "on") {
+    logoPath = null;
+  }
+
+  // Se lee ANTES de escribir para poder borrar el archivo que queda huérfano.
+  const { data: current } = await supabase
+    .from("org_branding")
+    .select("logo_url")
+    .eq("org_id", membership.org_id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("org_branding")
     .update({
@@ -62,6 +119,7 @@ export async function saveBranding(
       contact_email: d.contact_email ?? null,
       contact_phone: d.contact_phone ?? null,
       address: d.address ?? null,
+      ...(logoPath !== undefined ? { logo_url: logoPath } : {}),
     })
     .eq("org_id", membership.org_id);
 
@@ -72,7 +130,14 @@ export async function saveBranding(
     return { error: "No se pudieron guardar los cambios." };
   }
 
-  // El nombre y el color se pintan en todo el panel y en el portal del socio.
+  // La foto anterior ya no la referencia nadie. Si el borrado falla no se le
+  // dice nada al usuario: su cambio SÍ se guardó, sólo queda un archivo suelto.
+  const previous = current?.logo_url;
+  if (logoPath !== undefined && previous && previous !== logoPath) {
+    await supabase.storage.from(ORG_LOGOS_BUCKET).remove([previous]);
+  }
+
+  // El nombre, el color y la foto se pintan en todo el panel y en el portal.
   revalidatePath("/", "layout");
   return { error: null, ok: "Personalización guardada." };
 }

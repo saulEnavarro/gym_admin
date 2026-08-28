@@ -135,3 +135,56 @@ export async function togglePlanActive(id: string, active: boolean) {
   if (error) throw new Error("No se pudo actualizar el estado de la membresía.");
   revalidatePath("/memberships");
 }
+
+/**
+ * Borra un plan capturado por error, para que deje de aparecer en el sistema.
+ *
+ * Sólo se permite si NUNCA se usó. Las FK de `sale_items` y `client_memberships`
+ * son `on delete set null` y ambas guardan el nombre en un snapshot, así que
+ * borrar no rompería el historial — pero lo dejaría sin a qué plan apuntar, y
+ * los reportes por membresía perderían el hilo. Cuando ya hubo movimiento, la
+ * salida correcta es desactivarlo: desaparece del POS y conserva el pasado.
+ */
+export async function deletePlan(id: string): Promise<{ error: string | null }> {
+  const { membership } = await requireSession();
+  if (!membership) return { error: "Tu cuenta no tiene organización." };
+
+  const supabase = await createSupabaseClient();
+
+  const [sold, granted] = await Promise.all([
+    supabase
+      .from("sale_items")
+      .select("id", { count: "exact", head: true })
+      .eq("membership_plan_id", id),
+    supabase
+      .from("client_memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("membership_plan_id", id),
+  ]);
+
+  // Si no se pudo comprobar, no se borra: es peor equivocarse por exceso.
+  if (sold.error || granted.error) {
+    return { error: "No se pudo comprobar si la membresía ya se usó." };
+  }
+  if ((sold.count ?? 0) > 0 || (granted.count ?? 0) > 0) {
+    return {
+      error:
+        "Esta membresía ya se vendió o se otorgó a un cliente, así que no se puede borrar sin dejar huecos en el historial. Desactívala: deja de aparecer en el punto de venta.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("membership_plans")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    if (/row-level security|permission denied/i.test(error.message)) {
+      return { error: "Sólo un administrador o gerente puede borrar membresías." };
+    }
+    return { error: "No se pudo borrar la membresía." };
+  }
+
+  revalidatePath("/memberships");
+  return { error: null };
+}

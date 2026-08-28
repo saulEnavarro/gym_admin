@@ -21,6 +21,7 @@ import {
 import { PeriodSelector } from "@/components/reports/period-selector";
 import { formatPeriodRange, resolvePeriod } from "@/lib/reports/period";
 import { formatCurrency, cn } from "@/lib/utils";
+import { withIva, IVA_RATE } from "@/lib/billing/iva";
 import type { Database } from "@/lib/types/database.types";
 
 export const metadata: Metadata = { title: "Reportes de inventario" };
@@ -74,6 +75,8 @@ export default async function InventoryReportsPage({
   const profit = rows.reduce((s, r) => s + Number(r.profit), 0);
   const units = rows.reduce((s, r) => s + Number(r.quantity), 0);
   const stockValue = stock.reduce((s, r) => s + Number(r.stock_value), 0);
+  const retailValue = stock.reduce((s, r) => s + Number(r.retail_value), 0);
+  const stockPieces = stock.reduce((s, r) => s + Number(r.quantity), 0);
   const anyEstimated = rows.some((r) => r.estimated);
 
   const exportQuery = new URLSearchParams({
@@ -153,8 +156,8 @@ export default async function InventoryReportsPage({
         <Kpi
           icon={<Package className="h-5 w-5" />}
           label="Valor del inventario"
-          value={money(stockValue)}
-          hint="A costo, hoy"
+          value={money(withIva(stockValue))}
+          hint={`A costo con IVA · ${money(stockValue)} sin IVA`}
         />
       </div>
 
@@ -246,6 +249,8 @@ export default async function InventoryReportsPage({
           <CardTitle className="text-base">Existencias valuadas</CardTitle>
           <CardDescription>
             Cuánto dinero hay parado en el anaquel, a costo y a precio de venta.
+            Las filas van sin IVA; el total de abajo lo suma, que es lo que de
+            verdad salió y entrará de caja.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -261,8 +266,12 @@ export default async function InventoryReportsPage({
                     <th className="px-6 py-3 font-medium">Producto</th>
                     <th className="px-6 py-3 font-medium">Sucursal</th>
                     <th className="px-6 py-3 text-right font-medium">Piezas</th>
-                    <th className="px-6 py-3 text-right font-medium">A costo</th>
-                    <th className="px-6 py-3 text-right font-medium">A venta</th>
+                    <th className="px-6 py-3 text-right font-medium">
+                      A costo
+                    </th>
+                    <th className="px-6 py-3 text-right font-medium">
+                      A venta
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,6 +304,26 @@ export default async function InventoryReportsPage({
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border font-medium">
+                    <td className="px-6 py-3" colSpan={2}>
+                      Total con IVA ({Math.round(IVA_RATE * 100)}%)
+                    </td>
+                    <td className="px-6 py-3 text-right">{stockPieces}</td>
+                    <td className="px-6 py-3 text-right">
+                      {money(withIva(stockValue))}
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {money(stockValue)} sin IVA
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      {money(withIva(retailValue))}
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {money(retailValue)} sin IVA
+                      </span>
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}

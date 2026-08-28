@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
+import { ScanLine } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,8 @@ import {
   updateProduct,
   type ProductFormState,
 } from "@/app/(app)/inventory/actions";
-import { ivaAmount, round2, IVA_RATE } from "@/lib/billing/iva";
+import { BarcodeField } from "@/components/inventory/barcode-field";
+import { ivaAmount, round2, withIva, IVA_RATE } from "@/lib/billing/iva";
 import { margin } from "@/lib/inventory/helpers";
 import { formatCurrency } from "@/lib/utils";
 import type { Product, ProductCategory } from "@/lib/types/database.types";
@@ -36,11 +38,14 @@ function SubmitButton({ label }: { label: string }) {
 
 export function ProductForm({
   product,
+  barcode,
   categories,
   currency,
   locale,
 }: {
   product?: Product;
+  /** Código leído antes de llegar aquí (alta desde el escaneo). */
+  barcode?: string;
   categories: Pick<ProductCategory, "id" | "name">[];
   currency: string;
   locale: string;
@@ -59,7 +64,9 @@ export function ProductForm({
   const base = Number(price) || 0;
   const tax = ivaAmount(base);
   const total = round2(base + tax);
-  const util = margin(Number(cost) || 0, base);
+  const costBase = Number(cost) || 0;
+  const costTotal = withIva(costBase);
+  const util = margin(costBase, base);
   const money = (n: number) => formatCurrency(n, currency, locale);
 
   return (
@@ -138,20 +145,24 @@ export function ProductForm({
               placeholder="PRO-2K"
             />
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="space-y-2">
-            <Label htmlFor="barcode">Código de barras</Label>
-            <Input
-              id="barcode"
-              name="barcode"
-              maxLength={80}
-              defaultValue={product?.barcode ?? ""}
-              placeholder="7501000000000"
-            />
-            <p className="text-xs text-muted-foreground">
-              Se lee con el mismo lector del check-in.
-            </p>
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ScanLine className="h-4 w-4 text-primary" />
+            Código de barras
+          </CardTitle>
+          <CardDescription>
+            Con el lector conectado, el alta de un producto se hace sin soltar la
+            pistola: dispara sobre el empaque y el código queda capturado. Es el
+            mismo lector del check-in, y el mismo código con el que después se
+            cobra y se cuenta el inventario.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BarcodeField defaultValue={product?.barcode ?? barcode ?? ""} />
         </CardContent>
       </Card>
 
@@ -160,7 +171,9 @@ export function ProductForm({
           <CardTitle className="text-base">Precios</CardTitle>
           <CardDescription>
             Captura el costo y el precio <strong>sin IVA</strong>, igual que en
-            las membresías. El IVA se suma aparte en el ticket.
+            las membresías. Abajo se totaliza cada uno con el IVA incluido: el
+            costo, para cuadrar contra la factura del proveedor; el precio, para
+            saber qué se le cobra al cliente en mostrador.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -177,7 +190,7 @@ export function ProductForm({
               placeholder="0.00"
             />
             <p className="text-xs text-muted-foreground">
-              Lo que te cuesta a ti. Alimenta el reporte de utilidad.
+              Lo que te cuesta a ti, sin IVA. Alimenta el reporte de utilidad.
             </p>
           </div>
 
@@ -197,6 +210,19 @@ export function ProductForm({
           </div>
 
           <div className="rounded-md border border-border bg-muted/40 p-4 text-sm sm:col-span-2">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Costo sin IVA</span>
+              <span>{money(costBase)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                Costo total (IVA {Math.round(IVA_RATE * 100)}% incluido)
+              </span>
+              <span className="font-medium">{money(costTotal)}</span>
+            </div>
+
+            <div className="my-2 border-t border-border" />
+
             <div className="flex justify-between">
               <span className="text-muted-foreground">Precio sin IVA</span>
               <span>{money(base)}</span>

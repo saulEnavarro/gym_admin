@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Dumbbell, Home, Receipt, LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -9,10 +10,13 @@ import { ThemeToggle } from "@/components/theme-toggle";
  */
 export function PortalShell({
   orgName,
+  orgPhotoUrl,
   clientName,
   children,
 }: {
   orgName: string;
+  /** Foto del establecimiento (URL firmada). Null = se usa el ícono genérico. */
+  orgPhotoUrl?: string | null;
   clientName: string;
   children: React.ReactNode;
 }) {
@@ -21,9 +25,20 @@ export function PortalShell({
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-2 font-semibold">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Dumbbell className="h-5 w-5" />
-            </span>
+            {orgPhotoUrl ? (
+              <Image
+                src={orgPhotoUrl}
+                alt=""
+                width={36}
+                height={36}
+                unoptimized
+                className="h-9 w-9 shrink-0 rounded-lg object-cover"
+              />
+            ) : (
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Dumbbell className="h-5 w-5" />
+              </span>
+            )}
             <span className="truncate">{orgName}</span>
           </div>
           <div className="flex items-center gap-1">

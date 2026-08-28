@@ -5,6 +5,7 @@ import { requirePortalSession } from "@/lib/portal/session";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal/portal-shell";
 import { BrandStyle } from "@/components/brand-style";
+import { getSignedUrl, ORG_LOGOS_BUCKET } from "@/lib/storage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fullName, formatMemberNumber } from "@/lib/clients/helpers";
 import {
@@ -92,11 +93,14 @@ export default async function PortalHomePage() {
   );
   const gentio = crowdLabel(aforo.inside, aforo.capacity);
 
+  const orgPhotoUrl = await getSignedUrl(ORG_LOGOS_BUCKET, branding?.logo_url);
+
   return (
     <>
       <BrandStyle primaryColor={branding?.primary_color ?? "#4f46e5"} />
       <PortalShell
         orgName={branding?.display_name ?? organization?.name ?? "Mi gimnasio"}
+        orgPhotoUrl={orgPhotoUrl}
         clientName={fullName(client)}
       >
         <div className="space-y-6">

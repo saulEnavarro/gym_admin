@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { BarcodeScanSearch } from "@/components/inventory/barcode-scan-search";
 import { formatCurrency, cn } from "@/lib/utils";
 import { stockLevel, STOCK_LEVEL_LABELS } from "@/lib/inventory/helpers";
 import type {
@@ -85,6 +86,17 @@ export default async function InventoryPage() {
           </Link>
         </div>
       </div>
+
+      {rows.length > 0 && (
+        <BarcodeScanSearch
+          products={rows.map((p) => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            barcode: p.barcode,
+          }))}
+        />
+      )}
 
       {alerts.length > 0 && (
         <Card className="border-amber-500/50 bg-amber-500/5">

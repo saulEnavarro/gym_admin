@@ -4,6 +4,7 @@ import { requirePortalSession } from "@/lib/portal/session";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal/portal-shell";
 import { BrandStyle } from "@/components/brand-style";
+import { getSignedUrl, ORG_LOGOS_BUCKET } from "@/lib/storage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fullName } from "@/lib/clients/helpers";
 import { formatFolio, paymentLabel } from "@/lib/pos/helpers";
@@ -30,11 +31,14 @@ export default async function PortalHistoryPage() {
     "id" | "folio" | "total" | "payment_method" | "status" | "sold_at"
   >[];
 
+  const orgPhotoUrl = await getSignedUrl(ORG_LOGOS_BUCKET, branding?.logo_url);
+
   return (
     <>
       <BrandStyle primaryColor={branding?.primary_color ?? "#4f46e5"} />
       <PortalShell
         orgName={branding?.display_name ?? organization?.name ?? "Mi gimnasio"}
+        orgPhotoUrl={orgPhotoUrl}
         clientName={fullName(client)}
       >
         <Card>

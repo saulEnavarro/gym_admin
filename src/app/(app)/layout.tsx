@@ -2,6 +2,7 @@ import { requireSession } from "@/lib/auth/session";
 import { AppShell } from "@/components/app-shell";
 import { BrandStyle } from "@/components/brand-style";
 import { roleLabel } from "@/lib/auth/roles";
+import { getSignedUrl, ORG_LOGOS_BUCKET } from "@/lib/storage";
 
 export default async function AppLayout({
   children,
@@ -32,6 +33,9 @@ export default async function AppLayout({
     );
   }
 
+  // Foto del establecimiento: bucket privado, así que se firma por render.
+  const logoUrl = await getSignedUrl(ORG_LOGOS_BUCKET, branding?.logo_url);
+
   return (
     <>
       <BrandStyle primaryColor={branding?.primary_color ?? "#4f46e5"} />
@@ -39,6 +43,7 @@ export default async function AppLayout({
         org={{
           name: organization.name,
           displayName: branding?.display_name ?? organization.name,
+          logoUrl,
         }}
         user={{
           name: profile?.full_name ?? user.email ?? "Usuario",

@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MovementForm, TransferForm } from "@/components/inventory/stock-forms";
-import { ivaAmount, round2, IVA_RATE } from "@/lib/billing/iva";
+import { ivaAmount, round2, withIva, IVA_RATE } from "@/lib/billing/iva";
 import {
   margin,
   movementLabel,
@@ -120,7 +120,11 @@ export default async function ProductPage({
       {/* Precios */}
       <Card>
         <CardContent className="grid gap-4 p-5 sm:grid-cols-4">
-          <Tile label="Costo" value={money(p.cost)} hint="sin IVA" />
+          <Tile
+            label="Costo"
+            value={money(p.cost)}
+            hint={`sin IVA · ${money(withIva(Number(p.cost)))} con IVA`}
+          />
           <Tile label="Precio" value={money(base)} hint="sin IVA" />
           <Tile
             label="Al público"
@@ -219,7 +223,12 @@ export default async function ProductPage({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <MovementForm productId={p.id} branches={branchList} />
+              <MovementForm
+                productId={p.id}
+                branches={branchList}
+                currency={currency}
+                locale={locale}
+              />
             </CardContent>
           </Card>
 

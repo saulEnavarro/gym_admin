@@ -13,6 +13,8 @@ import {
   type StockFormState,
 } from "@/app/(app)/inventory/actions";
 import { MANUAL_MOVEMENTS } from "@/lib/inventory/helpers";
+import { withIva, round2, IVA_RATE } from "@/lib/billing/iva";
+import { formatCurrency } from "@/lib/utils";
 import type { StockMovementKind } from "@/lib/types/database.types";
 
 const initial: StockFormState = { error: null, ok: null };
@@ -67,9 +69,13 @@ function Feedback({ state }: { state: StockFormState }) {
 export function MovementForm({
   productId,
   branches,
+  currency,
+  locale,
 }: {
   productId: string;
   branches: { id: string; name: string }[];
+  currency: string;
+  locale: string;
 }) {
   const [state, formAction] = useActionState<StockFormState, FormData>(
     registerMovement,
@@ -82,6 +88,20 @@ export function MovementForm({
   useSelectSync(kindRef, kind, [state]);
   useSelectSync(branchRef, branchId, [state]);
   const config = MANUAL_MOVEMENTS.find((m) => m.value === kind);
+
+  // Cantidad y costo se controlan para poder totalizar la entrada en vivo. Se
+  // limpian al terminar la acción, cuando React hace form.reset() (ver arriba).
+  const [quantity, setQuantity] = useState("");
+  const [unitCost, setUnitCost] = useState("");
+  useEffect(() => {
+    setQuantity("");
+    setUnitCost("");
+  }, [state]);
+
+  const pieces = Number(quantity) || 0;
+  const costBase = Number(unitCost) || 0;
+  const entryBase = round2(costBase * pieces);
+  const money = (n: number) => formatCurrency(n, currency, locale);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -139,6 +159,8 @@ export function MovementForm({
             step={1}
             required
             placeholder="0"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
           />
         </div>
 
@@ -152,7 +174,26 @@ export function MovementForm({
               min={0}
               step={0.01}
               placeholder="0.00"
+              value={unitCost}
+              onChange={(e) => setUnitCost(e.target.value)}
             />
+            {/* El costo con IVA es lo que de verdad se pagó: sirve para cuadrar
+                la entrada contra la factura del proveedor sin sacar cuentas. */}
+            {costBase > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {money(withIva(costBase))} por pieza con IVA
+                {pieces > 0 && (
+                  <>
+                    {" · "}
+                    <strong className="text-foreground">
+                      {money(withIva(entryBase))}
+                    </strong>{" "}
+                    de costo total ({pieces} pz, IVA{" "}
+                    {Math.round(IVA_RATE * 100)}% incluido)
+                  </>
+                )}
+              </p>
+            )}
           </div>
         )}
 

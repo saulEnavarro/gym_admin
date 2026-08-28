@@ -8,8 +8,15 @@ import type { ProductCategory } from "@/lib/types/database.types";
 
 export const metadata: Metadata = { title: "Nuevo producto" };
 
-export default async function NewProductPage() {
+export default async function NewProductPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ barcode?: string }>;
+}) {
   const { branding } = await requireSession();
+  // Viene de escanear un producto que todavía no existe en el catálogo: el
+  // código ya se leyó, sería absurdo pedir que se dispare otra vez.
+  const { barcode } = await searchParams;
   const supabase = await createClient();
 
   const { data: categories } = await supabase
@@ -36,6 +43,7 @@ export default async function NewProductPage() {
       </div>
 
       <ProductForm
+        barcode={barcode?.slice(0, 80)}
         categories={(categories ?? []) as Pick<ProductCategory, "id" | "name">[]}
         currency={branding?.currency ?? "MXN"}
         locale={branding?.locale ?? "es-MX"}

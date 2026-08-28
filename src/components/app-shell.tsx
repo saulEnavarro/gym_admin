@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Dumbbell,
@@ -25,6 +26,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SaleFab } from "@/components/sale-fab";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -58,7 +60,8 @@ const NAV: NavItem[] = [
 
 export type AppShellProps = {
   children: React.ReactNode;
-  org: { name: string; displayName: string };
+  /** `logoUrl` es la foto del establecimiento (URL firmada) o null si no hay. */
+  org: { name: string; displayName: string; logoUrl: string | null };
   user: { name: string; email: string; roleLabel: string };
 };
 
@@ -77,9 +80,20 @@ export function AppShell({ children, org, user }: AppShellProps) {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-border px-5 font-semibold">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Dumbbell className="h-4 w-4" />
-        </span>
+        {org.logoUrl ? (
+          <Image
+            src={org.logoUrl}
+            alt=""
+            width={32}
+            height={32}
+            unoptimized
+            className="h-8 w-8 shrink-0 rounded-lg object-cover"
+          />
+        ) : (
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Dumbbell className="h-4 w-4" />
+          </span>
+        )}
         <span className="truncate">{org.displayName || org.name}</span>
       </div>
 
@@ -184,6 +198,8 @@ export function AppShell({ children, org, user }: AppShellProps) {
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
+
+      <SaleFab />
     </div>
   );
 }

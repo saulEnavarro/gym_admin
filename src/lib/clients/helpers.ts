@@ -56,3 +56,24 @@ export function initials(c: {
   const b = c.last_name?.[0] ?? "";
   return (a + b).toUpperCase() || "?";
 }
+
+/**
+ * Tamaños de página del listado de clientes. El mínimo es 50: con menos, un
+ * gimnasio mediano pasa la mañana paginando para encontrar a alguien.
+ */
+export const CLIENT_PAGE_SIZES = [50, 100, 200] as const;
+export const DEFAULT_CLIENT_PAGE_SIZE = 50;
+
+/** Normaliza el tamaño de página que llega por la URL (?per=). */
+export function resolvePageSize(value: string | undefined): number {
+  const n = Number(value);
+  return (CLIENT_PAGE_SIZES as readonly number[]).includes(n)
+    ? n
+    : DEFAULT_CLIENT_PAGE_SIZE;
+}
+
+/** Normaliza el número de página que llega por la URL (?page=), base 1. */
+export function resolvePage(value: string | undefined): number {
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}

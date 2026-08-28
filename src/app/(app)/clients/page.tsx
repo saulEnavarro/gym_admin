@@ -7,17 +7,25 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClientsToolbar } from "@/components/clients/clients-toolbar";
 import { ClientImportDropzone } from "@/components/clients/client-import-dropzone";
+import { ClientsPagination } from "@/components/clients/clients-pagination";
 import {
   ageFromBirthDate,
   formatMemberNumber,
   fullName,
   initials,
+  resolvePage,
+  resolvePageSize,
 } from "@/lib/clients/helpers";
 import type { Client } from "@/lib/types/database.types";
 
 export const metadata: Metadata = { title: "Clientes" };
 
-type SearchParams = Promise<{ q?: string; status?: string }>;
+type SearchParams = Promise<{
+  q?: string;
+  status?: string;
+  page?: string;
+  per?: string;
+}>;
 
 export default async function ClientsPage({
   searchParams,
@@ -25,16 +33,23 @@ export default async function ClientsPage({
   searchParams: SearchParams;
 }) {
   await requireSession();
-  const { q = "", status = "all" } = await searchParams;
+  const { q = "", status = "all", page: pageParam, per } = await searchParams;
   const supabase = await createClient();
+
+  // La paginación se resuelve en la base (range + count), no recortando en
+  // memoria: con miles de fichas traerlas todas para tirar 50 no escala.
+  const pageSize = resolvePageSize(per);
+  const page = resolvePage(pageParam);
+  const offset = (page - 1) * pageSize;
 
   let query = supabase
     .from("clients")
     .select(
       "id, member_number, first_name, last_name, birth_date, mobile_phone, phone, email, is_active",
+      { count: "exact" },
     )
     .order("member_number", { ascending: false })
-    .limit(200);
+    .range(offset, offset + pageSize - 1);
 
   if (status === "active") query = query.eq("is_active", true);
   else if (status === "inactive") query = query.eq("is_active", false);
@@ -51,7 +66,8 @@ export default async function ClientsPage({
     query = query.or(filters.join(","));
   }
 
-  const { data: clients } = await query;
+  const { data: clients, count } = await query;
+  const total = count ?? 0;
   const rows = (clients ?? []) as Pick<
     Client,
     | "id"
@@ -82,6 +98,15 @@ export default async function ClientsPage({
 
       <ClientImportDropzone />
       <ClientsToolbar />
+
+      {total > 0 && (
+        <ClientsPagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          shown={rows.length}
+        />
+      )}
 
       {rows.length === 0 ? (
         <Card>
@@ -147,6 +172,16 @@ export default async function ClientsPage({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Repetida abajo: tras recorrer 200 filas, subir a paginar es un viaje. */}
+      {total > pageSize && (
+        <ClientsPagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          shown={rows.length}
+        />
       )}
     </div>
   );
