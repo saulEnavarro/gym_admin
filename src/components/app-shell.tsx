@@ -54,8 +54,8 @@ const NAV: NavItem[] = [
   { label: "Sucursales", href: "/branches", icon: Building2, available: true },
   { label: "Equipo", href: "/team", icon: Users, available: true },
   { label: "Personalización", href: "/branding", icon: Palette, available: true },
-  { label: "Auditoría", href: "/audit", icon: ScrollText, available: false },
-  { label: "Configuración", href: "/settings", icon: Settings, available: false },
+  { label: "Auditoría", href: "/audit", icon: ScrollText, available: true },
+  { label: "Configuración", href: "/settings", icon: Settings, available: true },
 ];
 
 export type AppShellProps = {
