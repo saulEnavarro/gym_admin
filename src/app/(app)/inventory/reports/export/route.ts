@@ -61,7 +61,7 @@ export async function GET(request: Request) {
     const columns: (Column<SalesRow> & { width?: number; money?: boolean })[] = [
       { header: "Producto", value: (r) => r.product_name, width: 30 },
       { header: "Piezas", value: (r) => Number(r.quantity), width: 10 },
-      { header: "Ingreso sin IVA", value: (r) => Number(r.revenue), width: 16, money: true },
+      { header: "Ingreso (IVA incl.)", value: (r) => Number(r.revenue), width: 18, money: true },
       { header: "Costo", value: (r) => Number(r.cost), width: 14, money: true },
       { header: "Utilidad", value: (r) => Number(r.profit), width: 14, money: true },
       { header: "Margen %", value: (r) => Number(r.margin_pct), width: 11 },

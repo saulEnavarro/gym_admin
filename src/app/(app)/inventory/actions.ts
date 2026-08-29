@@ -17,7 +17,7 @@ const productSchema = z.object({
   description: z.preprocess(emptyToUndefined, z.string().max(600).optional()),
   sku: z.preprocess(emptyToUndefined, z.string().trim().max(60).optional()),
   barcode: z.preprocess(emptyToUndefined, z.string().trim().max(80).optional()),
-  // Ambos SIN IVA, igual que las membresías (§7).
+  // Ambos CON IVA incluido: lo capturado es el monto final (ver migración 0031).
   cost: z.coerce.number().nonnegative("El costo no puede ser negativo").max(9_999_999),
   price: z.coerce.number().nonnegative("El precio no puede ser negativo").max(9_999_999),
   track_stock: z.coerce.boolean(),

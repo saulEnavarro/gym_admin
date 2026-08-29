@@ -22,7 +22,7 @@ import {
   type ProductFormState,
 } from "@/app/(app)/inventory/actions";
 import { BarcodeField } from "@/components/inventory/barcode-field";
-import { ivaAmount, round2, withIva, IVA_RATE } from "@/lib/billing/iva";
+import { ivaFromGross, netFromGross, IVA_RATE } from "@/lib/billing/iva";
 import { margin } from "@/lib/inventory/helpers";
 import { formatCurrency } from "@/lib/utils";
 import type { Product, ProductCategory } from "@/lib/types/database.types";
@@ -61,12 +61,15 @@ export function ProductForm({
   const [cost, setCost] = useState(String(product?.cost ?? ""));
   const [price, setPrice] = useState(String(product?.price ?? ""));
 
-  const base = Number(price) || 0;
-  const tax = ivaAmount(base);
-  const total = round2(base + tax);
-  const costBase = Number(cost) || 0;
-  const costTotal = withIva(costBase);
-  const util = margin(costBase, base);
+  // Precio y costo se capturan CON IVA incluido: lo tecleado es el monto final.
+  // El IVA y la base se EXTRAEN de ese monto, no se suman encima.
+  const priceGross = Number(price) || 0;
+  const priceNet = netFromGross(priceGross);
+  const priceTax = ivaFromGross(priceGross);
+  const costGross = Number(cost) || 0;
+  const costNet = netFromGross(costGross);
+  const costTax = ivaFromGross(costGross);
+  const util = margin(costGross, priceGross);
   const money = (n: number) => formatCurrency(n, currency, locale);
 
   return (
@@ -170,15 +173,14 @@ export function ProductForm({
         <CardHeader>
           <CardTitle className="text-base">Precios</CardTitle>
           <CardDescription>
-            Captura el costo y el precio <strong>sin IVA</strong>, igual que en
-            las membresías. Abajo se totaliza cada uno con el IVA incluido: el
-            costo, para cuadrar contra la factura del proveedor; el precio, para
-            saber qué se le cobra al cliente en mostrador.
+            Captura el costo y el precio <strong>con IVA incluido</strong>: lo
+            que escribes es lo que se paga. Abajo se desglosa el IVA que ya va
+            contenido, para tu control contable.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="cost">Costo (sin IVA)</Label>
+            <Label htmlFor="cost">Costo (IVA incluido)</Label>
             <Input
               id="cost"
               name="cost"
@@ -190,12 +192,13 @@ export function ProductForm({
               placeholder="0.00"
             />
             <p className="text-xs text-muted-foreground">
-              Lo que te cuesta a ti, sin IVA. Alimenta el reporte de utilidad.
+              Lo que te cuesta a ti, tal cual viene en la factura. Alimenta el
+              reporte de utilidad.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="price">Precio de venta (sin IVA) *</Label>
+            <Label htmlFor="price">Precio de venta (IVA incluido) *</Label>
             <Input
               id="price"
               name="price"
@@ -210,32 +213,30 @@ export function ProductForm({
           </div>
 
           <div className="rounded-md border border-border bg-muted/40 p-4 text-sm sm:col-span-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Costo sin IVA</span>
-              <span>{money(costBase)}</span>
+            <div className="flex justify-between font-medium">
+              <span>Costo (IVA incluido)</span>
+              <span>{money(costGross)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                Costo total (IVA {Math.round(IVA_RATE * 100)}% incluido)
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>
+                IVA contenido ({Math.round(IVA_RATE * 100)}%) · base{" "}
+                {money(costNet)}
               </span>
-              <span className="font-medium">{money(costTotal)}</span>
+              <span>{money(costTax)}</span>
             </div>
 
             <div className="my-2 border-t border-border" />
 
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Precio sin IVA</span>
-              <span>{money(base)}</span>
+            <div className="flex justify-between font-semibold">
+              <span>Precio al público (IVA incluido)</span>
+              <span>{money(priceGross)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                IVA ({Math.round(IVA_RATE * 100)}%)
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>
+                IVA contenido ({Math.round(IVA_RATE * 100)}%) · base{" "}
+                {money(priceNet)}
               </span>
-              <span>{money(tax)}</span>
-            </div>
-            <div className="mt-1 flex justify-between border-t border-border pt-1 font-semibold">
-              <span>Precio al público</span>
-              <span>{money(total)}</span>
+              <span>{money(priceTax)}</span>
             </div>
             {util != null && (
               <p className="mt-2 text-xs text-muted-foreground">

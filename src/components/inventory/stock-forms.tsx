@@ -13,7 +13,7 @@ import {
   type StockFormState,
 } from "@/app/(app)/inventory/actions";
 import { MANUAL_MOVEMENTS } from "@/lib/inventory/helpers";
-import { withIva, round2, IVA_RATE } from "@/lib/billing/iva";
+import { netFromGross, ivaFromGross, round2 } from "@/lib/billing/iva";
 import { formatCurrency } from "@/lib/utils";
 import type { StockMovementKind } from "@/lib/types/database.types";
 
@@ -99,8 +99,8 @@ export function MovementForm({
   }, [state]);
 
   const pieces = Number(quantity) || 0;
-  const costBase = Number(unitCost) || 0;
-  const entryBase = round2(costBase * pieces);
+  const costGross = Number(unitCost) || 0;
+  const entryGross = round2(costGross * pieces);
   const money = (n: number) => formatCurrency(n, currency, locale);
 
   return (
@@ -166,7 +166,7 @@ export function MovementForm({
 
         {kind === "purchase" && (
           <div className="space-y-2">
-            <Label htmlFor="unit_cost">Costo unitario (sin IVA)</Label>
+            <Label htmlFor="unit_cost">Costo unitario (IVA incluido)</Label>
             <Input
               id="unit_cost"
               name="unit_cost"
@@ -177,19 +177,19 @@ export function MovementForm({
               value={unitCost}
               onChange={(e) => setUnitCost(e.target.value)}
             />
-            {/* El costo con IVA es lo que de verdad se pagó: sirve para cuadrar
-                la entrada contra la factura del proveedor sin sacar cuentas. */}
-            {costBase > 0 && (
+            {/* Se captura tal cual viene en la factura del proveedor (con IVA);
+                abajo se muestra el total de la entrada y el IVA que contiene. */}
+            {costGross > 0 && (
               <p className="text-xs text-muted-foreground">
-                {money(withIva(costBase))} por pieza con IVA
+                Incluye {money(ivaFromGross(costGross))} de IVA por pieza (base{" "}
+                {money(netFromGross(costGross))})
                 {pieces > 0 && (
                   <>
                     {" · "}
                     <strong className="text-foreground">
-                      {money(withIva(entryBase))}
+                      {money(entryGross)}
                     </strong>{" "}
-                    de costo total ({pieces} pz, IVA{" "}
-                    {Math.round(IVA_RATE * 100)}% incluido)
+                    de costo total ({pieces} pz, IVA incluido)
                   </>
                 )}
               </p>

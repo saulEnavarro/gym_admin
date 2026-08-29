@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MovementForm, TransferForm } from "@/components/inventory/stock-forms";
-import { ivaAmount, round2, withIva, IVA_RATE } from "@/lib/billing/iva";
+import { ivaFromGross, netFromGross, IVA_RATE } from "@/lib/billing/iva";
 import {
   margin,
   movementLabel,
@@ -85,9 +85,10 @@ export default async function ProductPage({
   const total = stockRows.reduce((sum, s) => sum + s.quantity, 0);
   const logs = (movements ?? []) as StockMovement[];
 
-  const base = Number(p.price);
-  const tax = ivaAmount(base);
-  const util = margin(Number(p.cost), base);
+  // Precio y costo YA incluyen IVA; la base y el IVA se extraen para mostrarlos.
+  const priceGross = Number(p.price);
+  const priceTax = ivaFromGross(priceGross);
+  const util = margin(Number(p.cost), priceGross);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -123,14 +124,18 @@ export default async function ProductPage({
           <Tile
             label="Costo"
             value={money(p.cost)}
-            hint={`sin IVA · ${money(withIva(Number(p.cost)))} con IVA`}
+            hint={`IVA incluido · base ${money(netFromGross(Number(p.cost)))}`}
           />
-          <Tile label="Precio" value={money(base)} hint="sin IVA" />
           <Tile
-            label="Al público"
-            value={money(round2(base + tax))}
-            hint={`IVA ${Math.round(IVA_RATE * 100)}% incluido`}
+            label="Precio al público"
+            value={money(priceGross)}
+            hint={`IVA incluido · base ${money(netFromGross(priceGross))}`}
             strong
+          />
+          <Tile
+            label={`IVA (${Math.round(IVA_RATE * 100)}%)`}
+            value={money(priceTax)}
+            hint="contenido en el precio"
           />
           <Tile
             label="Margen"

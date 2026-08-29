@@ -1,20 +1,23 @@
 /**
- * IVA (México). Decisión §7: los precios capturados son BASE gravable, SIN IVA.
- * El 16% se calcula y se suma APARTE en el ticket, el total y los reportes.
+ * IVA (México). Los precios y costos se capturan CON IVA INCLUIDO: la cantidad
+ * que se digita es el monto final: lo que el cliente paga y lo que se cobra en
+ * caja. El 16% NO se suma encima; se considera ya contenido y, cuando hace
+ * falta desglosarlo (base gravable e IVA para efectos contables), se EXTRAE del
+ * total con `netFromGross` / `ivaFromGross`.
  */
 export const IVA_RATE = 0.16;
-
-/** Monto de IVA sobre una base sin IVA. */
-export function ivaAmount(base: number, rate = IVA_RATE): number {
-  return round2(base * rate);
-}
-
-/** Total con IVA a partir de una base sin IVA. */
-export function withIva(base: number, rate = IVA_RATE): number {
-  return round2(base + ivaAmount(base, rate));
-}
 
 /** Redondeo a 2 decimales (centavos), evitando errores de coma flotante. */
 export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+/** Base gravable (sin IVA) contenida en un monto que YA incluye IVA. */
+export function netFromGross(gross: number, rate = IVA_RATE): number {
+  return round2(gross / (1 + rate));
+}
+
+/** IVA contenido dentro de un monto que YA lo incluye. */
+export function ivaFromGross(gross: number, rate = IVA_RATE): number {
+  return round2(gross - netFromGross(gross, rate));
 }

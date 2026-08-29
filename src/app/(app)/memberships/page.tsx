@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TogglePlanActive } from "@/components/memberships/toggle-plan-active";
 import { DeletePlanButton } from "@/components/memberships/delete-plan-button";
 import { formatCurrency } from "@/lib/utils";
-import { withIva } from "@/lib/billing/iva";
+import { netFromGross } from "@/lib/billing/iva";
 import { durationLabel, membersLabel } from "@/lib/memberships/helpers";
 import type { MembershipPlan } from "@/lib/types/database.types";
 
@@ -34,8 +34,8 @@ export default async function MembershipsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Membresías</h1>
           <p className="text-muted-foreground">
-            Catálogo de planes. Los precios son base sin IVA (16% aparte en el
-            POS).
+            Catálogo de planes. Los precios son con IVA incluido: lo que ves es
+            lo que se cobra.
           </p>
         </div>
         <Link href="/memberships/new" className={buttonVariants()}>
@@ -64,10 +64,10 @@ export default async function MembershipsPage() {
                     <th className="px-4 py-3 font-medium">Vigencia</th>
                     <th className="px-4 py-3 font-medium">Personas</th>
                     <th className="px-4 py-3 text-right font-medium">
-                      Precio s/IVA
+                      Precio (IVA incl.)
                     </th>
                     <th className="px-4 py-3 text-right font-medium">
-                      Con IVA
+                      Base s/IVA
                     </th>
                     <th className="px-4 py-3 font-medium">Estado</th>
                     <th className="px-4 py-3 text-right font-medium">Acciones</th>
@@ -97,7 +97,7 @@ export default async function MembershipsPage() {
                         {formatCurrency(p.price, currency, locale)}
                       </td>
                       <td className="px-4 py-3 text-right text-muted-foreground">
-                        {formatCurrency(withIva(p.price), currency, locale)}
+                        {formatCurrency(netFromGross(p.price), currency, locale)}
                       </td>
                       <td className="px-4 py-3">
                         {p.is_active ? (

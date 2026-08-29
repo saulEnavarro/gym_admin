@@ -195,7 +195,7 @@ export default async function InventoryPage() {
                         <td className="px-4 py-3 text-right">
                           {money(p.price)}
                           <span className="block text-xs text-muted-foreground">
-                            sin IVA
+                            IVA incl.
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right font-medium">

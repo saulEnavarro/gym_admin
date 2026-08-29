@@ -16,7 +16,7 @@ const planSchema = z.object({
     emptyToUndefined,
     z.string().max(500).optional(),
   ),
-  // price = base SIN IVA. Aceptamos hasta 2 decimales, no negativo.
+  // price = CON IVA incluido. Aceptamos hasta 2 decimales, no negativo.
   price: z.coerce
     .number({ invalid_type_error: "El precio debe ser un número" })
     .nonnegative("El precio no puede ser negativo")

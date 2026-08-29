@@ -21,7 +21,7 @@ import {
 import { PeriodSelector } from "@/components/reports/period-selector";
 import { formatPeriodRange, resolvePeriod } from "@/lib/reports/period";
 import { formatCurrency, cn } from "@/lib/utils";
-import { withIva, IVA_RATE } from "@/lib/billing/iva";
+import { netFromGross } from "@/lib/billing/iva";
 import type { Database } from "@/lib/types/database.types";
 
 export const metadata: Metadata = { title: "Reportes de inventario" };
@@ -141,7 +141,7 @@ export default async function InventoryReportsPage({
           icon={<TrendingUp className="h-5 w-5" />}
           label="Ingreso"
           value={money(revenue)}
-          hint="Sin IVA"
+          hint="IVA incluido"
         />
         <Kpi
           icon={<BadgeDollarSign className="h-5 w-5" />}
@@ -156,8 +156,8 @@ export default async function InventoryReportsPage({
         <Kpi
           icon={<Package className="h-5 w-5" />}
           label="Valor del inventario"
-          value={money(withIva(stockValue))}
-          hint={`A costo con IVA · ${money(stockValue)} sin IVA`}
+          value={money(stockValue)}
+          hint={`A costo, IVA incluido · base ${money(netFromGross(stockValue))}`}
         />
       </div>
 
@@ -249,8 +249,8 @@ export default async function InventoryReportsPage({
           <CardTitle className="text-base">Existencias valuadas</CardTitle>
           <CardDescription>
             Cuánto dinero hay parado en el anaquel, a costo y a precio de venta.
-            Las filas van sin IVA; el total de abajo lo suma, que es lo que de
-            verdad salió y entrará de caja.
+            Los importes ya incluyen IVA, que es lo que de verdad salió y entrará
+            de caja.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -307,19 +307,19 @@ export default async function InventoryReportsPage({
                 <tfoot>
                   <tr className="border-t-2 border-border font-medium">
                     <td className="px-6 py-3" colSpan={2}>
-                      Total con IVA ({Math.round(IVA_RATE * 100)}%)
+                      Total (IVA incluido)
                     </td>
                     <td className="px-6 py-3 text-right">{stockPieces}</td>
                     <td className="px-6 py-3 text-right">
-                      {money(withIva(stockValue))}
+                      {money(stockValue)}
                       <span className="block text-xs font-normal text-muted-foreground">
-                        {money(stockValue)} sin IVA
+                        base {money(netFromGross(stockValue))}
                       </span>
                     </td>
                     <td className="px-6 py-3 text-right">
-                      {money(withIva(retailValue))}
+                      {money(retailValue)}
                       <span className="block text-xs font-normal text-muted-foreground">
-                        {money(retailValue)} sin IVA
+                        base {money(netFromGross(retailValue))}
                       </span>
                     </td>
                   </tr>

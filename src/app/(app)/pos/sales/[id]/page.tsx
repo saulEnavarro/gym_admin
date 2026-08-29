@@ -205,7 +205,8 @@ export default async function SaleTicketPage({
             })}
           </div>
 
-          {/* Desglose */}
+          {/* Desglose. Los precios incluyen IVA: subtotal − descuento = total,
+              y el IVA va contenido (se muestra como referencia, no se suma). */}
           <div className="space-y-1 border-t border-border pt-3">
             <Row label="Subtotal">{money(s.subtotal)}</Row>
             {s.discount_amount > 0 && (
@@ -213,14 +214,14 @@ export default async function SaleTicketPage({
                 −{money(s.discount_amount)}
               </Row>
             )}
-            <Row label={`IVA (${Math.round(IVA_RATE * 100)}%)`}>
-              {money(s.tax_amount)}
-            </Row>
             <div className="border-t border-border pt-2">
               <Row label="Total cobrado" strong>
                 {money(s.total)}
               </Row>
             </div>
+            <Row label={`IVA incluido (${Math.round(IVA_RATE * 100)}%)`} muted>
+              {money(s.tax_amount)}
+            </Row>
             {devuelto > 0 && (
               <>
                 <Row label="Devuelto" muted>

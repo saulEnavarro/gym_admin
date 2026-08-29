@@ -158,20 +158,20 @@ export default async function ReportsPage({
             <CardTitle className="text-base">Desglose</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <Line label="Subtotal (sin IVA)">{money(summary.subtotal)}</Line>
+            <Line label="Ventas (con IVA)">{money(summary.subtotal)}</Line>
             {Number(summary.discount_amount) > 0 && (
               <Line label="Descuentos" muted>
                 −{money(summary.discount_amount)}
               </Line>
             )}
-            <Line label={`IVA (${Math.round(IVA_RATE * 100)}%)`}>
-              {money(summary.tax_amount)}
-            </Line>
             <div className="border-t border-border pt-2">
               <Line label="Total cobrado" strong>
                 {money(summary.total)}
               </Line>
             </div>
+            <Line label={`IVA incluido (${Math.round(IVA_RATE * 100)}%)`} muted>
+              {money(summary.tax_amount)}
+            </Line>
 
             <div className="space-y-2 border-t border-border pt-3">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">

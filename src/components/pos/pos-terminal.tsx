@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { ClientCombobox, type ClientOption } from "./client-combobox";
 import { createSale, type SaleFormState } from "@/app/(app)/pos/actions";
-import { ivaAmount, round2, IVA_RATE } from "@/lib/billing/iva";
+import { ivaFromGross, netFromGross, round2, IVA_RATE } from "@/lib/billing/iva";
 import { formatCurrency, cn } from "@/lib/utils";
 import { durationLabel } from "@/lib/memberships/helpers";
 
@@ -130,7 +130,8 @@ export function PosTerminal({
   );
   const isCouple = plan?.max_members === 2;
 
-  // Totales en vivo (misma fórmula que la BD: base sin IVA → descuento → IVA).
+  // Totales en vivo (misma fórmula que la BD: precio con IVA − descuento = total;
+  // el IVA se extrae del total, no se suma encima).
   const cartTotal = useMemo(
     () => round2(cart.reduce((s, l) => s + l.product.price * l.quantity, 0)),
     [cart],
@@ -147,9 +148,11 @@ export function PosTerminal({
     } else if (discountType === "amount") {
       discount = Math.min(Math.max(raw, 0), subtotal);
     }
-    const base = round2(subtotal - discount);
-    const tax = ivaAmount(base);
-    const total = round2(base + tax);
+    // Precios CON IVA incluido: el total es lo que se cobra (precio − descuento)
+    // y el IVA se extrae de ese total, no se suma encima.
+    const total = round2(subtotal - discount);
+    const base = netFromGross(total);
+    const tax = ivaFromGross(total);
     return { subtotal, discount, base, tax, total };
   }, [plan, cartTotal, discountType, discountValue]);
 
@@ -447,15 +450,17 @@ export function PosTerminal({
                     −{money(totals!.discount)}
                   </Row>
                 )}
-                <Row label="Subtotal (base)">{money(totals!.base)}</Row>
-                <Row label={`IVA (${Math.round(IVA_RATE * 100)}%)`}>
-                  {money(totals!.tax)}
-                </Row>
                 <div className="border-t border-border pt-3">
-                  <Row label="Total" strong>
+                  <Row label="Total a cobrar" strong>
                     {money(totals!.total)}
                   </Row>
                 </div>
+                <Row label={`IVA incluido (${Math.round(IVA_RATE * 100)}%)`} muted>
+                  {money(totals!.tax)}
+                </Row>
+                <Row label="Base sin IVA" muted>
+                  {money(totals!.base)}
+                </Row>
               </>
             )}
             <div className="pt-2">

@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { withIva } from "@/lib/billing/iva";
+import { ivaFromGross, netFromGross } from "@/lib/billing/iva";
 import { formatCurrency } from "@/lib/utils";
 import type { MembershipPlan } from "@/lib/types/database.types";
 
@@ -69,8 +69,8 @@ export function PlanForm({
         <CardHeader>
           <CardTitle className="text-base">Datos de la membresía</CardTitle>
           <CardDescription>
-            El precio es la base <strong>sin IVA</strong>; el 16% se suma aparte
-            en el punto de venta.
+            El precio es <strong>con IVA incluido</strong>: lo que escribes es lo
+            que se le cobra al socio en el punto de venta.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -98,7 +98,7 @@ export function PlanForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="price">Precio sin IVA ({currency}) *</Label>
+            <Label htmlFor="price">Precio con IVA incluido ({currency}) *</Label>
             <Input
               id="price"
               name="price"
@@ -112,8 +112,16 @@ export function PlanForm({
             />
             <p className="text-xs text-muted-foreground">
               {validPrice
-                ? `Con IVA (16%): ${formatCurrency(withIva(priceNum), currency, locale)}`
-                : "Con IVA (16%): —"}
+                ? `Es lo que se cobra. Incluye ${formatCurrency(
+                    ivaFromGross(priceNum),
+                    currency,
+                    locale,
+                  )} de IVA (base ${formatCurrency(
+                    netFromGross(priceNum),
+                    currency,
+                    locale,
+                  )}).`
+                : "Es lo que se cobra al socio, IVA incluido."}
             </p>
           </div>
 
