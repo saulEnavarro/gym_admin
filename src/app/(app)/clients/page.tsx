@@ -48,7 +48,10 @@ export default async function ClientsPage({
       "id, member_number, first_name, last_name, birth_date, mobile_phone, phone, email, is_active",
       { count: "exact" },
     )
-    .order("member_number", { ascending: false })
+    // Orden alfabético A→Z. El nombre se muestra "Nombre Apellidos", así que se
+    // ordena por nombre y luego por apellidos para desempatar homónimos.
+    .order("first_name", { ascending: true })
+    .order("last_name", { ascending: true })
     .range(offset, offset + pageSize - 1);
 
   if (status === "active") query = query.eq("is_active", true);
