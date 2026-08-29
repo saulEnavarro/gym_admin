@@ -22,6 +22,7 @@ import {
   Palette,
   ScrollText,
   Settings,
+  Smartphone,
   Menu,
   LogOut,
 } from "lucide-react";
@@ -47,6 +48,7 @@ const NAV: NavItem[] = [
   { label: "Caja", href: "/cash", icon: Banknote, available: true },
   { label: "Acceso", href: "/access", icon: DoorOpen, available: true },
   { label: "Ocupación", href: "/occupancy", icon: Activity, available: true },
+  { label: "Portal del socio", href: "/portal-preview", icon: Smartphone, available: true },
   { label: "Inventario", href: "/inventory", icon: Package, available: true },
   { label: "Préstamos", href: "/rentals", icon: HandCoins, available: true },
   { label: "Cortes", href: "/reports", icon: BarChart3, available: true },
